@@ -6,8 +6,25 @@ export const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_YggC_QTHqlEdqwmQuuw-KA_v2fjqUDT"
 );
 
-/** Today's date (YYYY-MM-DD) in India time – matches the database's order_date. */
-export const todayIST = () =>
+/**
+ * Shop business day (YYYY-MM-DD) in India time.
+ * Hours are 4:00 PM → 4:00 AM, so we subtract 16 hours from IST "now".
+ * Matches database today_business_ist() / order_date.
+ * Example: Tue 2 AM → Monday's business day.
+ */
+export const todayIST = () => {
+  const ist = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  );
+  ist.setHours(ist.getHours() - 16);
+  const y = ist.getFullYear();
+  const m = String(ist.getMonth() + 1).padStart(2, "0");
+  const d = String(ist.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
+/** Calendar date in IST (billing / invoices only). */
+export const calendarTodayIST = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
 export const addDays = (iso: string, n: number) => {

@@ -29,15 +29,17 @@ export async function GET(req: NextRequest) {
 
   const supabase = createClient(supabaseUrl, serviceKey);
 
-  // Yesterday in IST (cron runs at 00:00 IST)
-  const now = new Date();
-  // Approximate IST: UTC+5:30
-  const istOffsetMs = 5.5 * 60 * 60 * 1000;
-  const istNow = new Date(now.getTime() + istOffsetMs);
-  // We want the day that just ended → subtract 1 day from IST date
-  const y = new Date(istNow);
-  y.setUTCDate(y.getUTCDate() - 1);
-  const dayStr = y.toISOString().slice(0, 10);
+  // Shop hours 4 PM → 4 AM. Run cron ~4:30 AM IST.
+  // At that time today_business_ist() is the night that just closed.
+  let dayStr: string;
+  const { data: bizDay, error: dayErr } = await supabase.rpc("today_business_ist");
+  if (dayErr || !bizDay) {
+    const ist = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+    ist.setHours(ist.getHours() - 16);
+    dayStr = `${ist.getFullYear()}-${String(ist.getMonth() + 1).padStart(2, "0")}-${String(ist.getDate()).padStart(2, "0")}`;
+  } else {
+    dayStr = String(bizDay);
+  }
 
   // Get all active shops
   const { data: shops, error: shopsErr } = await supabase
