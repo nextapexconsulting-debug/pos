@@ -78,8 +78,8 @@ function EditOrder() {
   const selectOrder = (o: Order) => {
     setSelected(o);
     setItems(o.order_items.map((i) => ({ ...i })));
-    setIsParcel(!!o.is_parcel);
-    setIsJain(!!o.is_jain);
+    setIsParcel(o.is_parcel === true);
+    setIsJain(o.is_jain === true);
     setMsg("");
   };
 
@@ -132,8 +132,8 @@ function EditOrder() {
     }
     setBusy(true);
     setMsg("");
-    const parcel = isParcel === true;
-    const jain = isJain === true;
+    const parcelOn = isParcel === true;
+    const jainOn = isJain === true;
     const { data, error } = await supabase.rpc("update_order", {
       p_order: selected.id,
       p_items: items.map((i) => ({
@@ -144,8 +144,8 @@ function EditOrder() {
         price: i.price,
         qty: i.qty,
       })),
-      p_is_parcel: parcel,
-      p_is_jain: jain,
+      p_is_parcel: parcelOn ? true : false,
+      p_is_jain: jainOn ? true : false,
     });
     setBusy(false);
     if (error) {
@@ -154,20 +154,26 @@ function EditOrder() {
     }
     setMsg(`✅ Order #${selected.order_no} updated · ₹${data?.total ?? total}`);
 
-    // Telegram: only mention P / J when selected
-    const flags: string[] = [];
-    if (parcel) flags.push("P");
-    if (jain) flags.push("J");
-    const flagStr = flags.length ? ` [${flags.join("")}]` : "";
     const itemsText = items
-      .map((i) => `• <b>${i.name_gu || i.name_en}</b> × ${i.qty}  =  ₹${i.price * i.qty}`)
-      .join("\n");
+      .map((i) => `• <b>${i.name_gu || i.name_en}</b>\n    ${i.qty} × ₹${i.price} = <b>₹${i.price * i.qty}</b>`)
+      .join("\n\n");
     const lines = [
-      `✏️ <b>ઓર્ડર અપડેટ #${selected.order_no}${flagStr}</b>`,
+      "══════════════════",
+      `✏️ <b>ઓર્ડર અપડેટ</b>`,
+      `<b>#${selected.order_no}</b>`,
+      "══════════════════",
     ];
-    if (parcel) lines.push("📦 પાર્સલ (P)");
-    if (jain) lines.push("🥗 જૈન (J)");
-    lines.push("", itemsText, "", `💰 <b>કુલ: ₹${data?.total ?? total}</b>`);
+    if (parcelOn) {
+      lines[2] = `<b>#${selected.order_no}  [P]</b>`;
+      lines.push("📦 <b>પાર્સલ (P)</b>");
+    }
+    if (jainOn) {
+      lines[2] = parcelOn
+        ? `<b>#${selected.order_no}  [PJ]</b>`
+        : `<b>#${selected.order_no}  [J]</b>`;
+      lines.push("🥗 <b>જૈન (J)</b>");
+    }
+    lines.push("", itemsText, "", "──────────────────", `💰 <b>કુલ: ₹${data?.total ?? total}</b>`, "──────────────────");
     const message = lines.join("\n");
 
     try {
@@ -218,9 +224,9 @@ function EditOrder() {
             >
               <div className="flex items-center gap-2">
                 <span className="font-bold">#{o.order_no}</span>
-                {(o.is_parcel || o.is_jain) && (
+                {(o.is_parcel === true || o.is_jain === true) && (
                   <span className="text-xs font-bold text-orange-600">
-                    [{[o.is_parcel ? "P" : "", o.is_jain ? "J" : ""].filter(Boolean).join("")}]
+                    [{[o.is_parcel === true ? "P" : null, o.is_jain === true ? "J" : null].filter(Boolean).join("")}]
                   </span>
                 )}
                 <span className="text-xs text-slate-400">

@@ -321,11 +321,11 @@ function VoicePOS() {
     setIsSending(true);
     setStatus("Saving order...");
 
-    // Only true when user explicitly tapped P / J (default is false)
-    const parcel = isParcel === true;
-    const jain = isJain === true;
+    // P / J ONLY if user turned the toggle ON (default off every order)
+    const parcelOn = isParcel === true;
+    const jainOn = isJain === true;
 
-    const { data: saved, error: saveErr } = await supabase.rpc("place_order", {
+    const rpcArgs: Record<string, unknown> = {
       p_items: order.map((i) => ({
         product_id: i.product.id,
         name_en: i.product.nameEn,
@@ -334,9 +334,14 @@ function VoicePOS() {
         price: i.product.price,
         qty: i.quantity,
       })),
-      p_is_parcel: parcel,
-      p_is_jain: jain,
-    });
+      p_is_parcel: false,
+      p_is_jain: false,
+    };
+    // Only set true when button was pressed — never leave undefined/null
+    if (parcelOn) rpcArgs.p_is_parcel = true;
+    if (jainOn) rpcArgs.p_is_jain = true;
+
+    const { data: saved, error: saveErr } = await supabase.rpc("place_order", rpcArgs);
     if (saveErr || !saved) {
       setStatus(`❌ Not saved: ${saveErr?.message ?? "unknown error"}`);
       setIsSending(false);
@@ -352,26 +357,31 @@ function VoicePOS() {
       hour12: true,
     });
 
-    // Telegram: only mention P / J when selected — otherwise plain order
-    const flags: string[] = [];
-    if (parcel) flags.push("P");
-    if (jain) flags.push("J");
-    const flagStr = flags.length ? ` [${flags.join("")}]` : "";
-
     const itemsText = order
       .map(
         (i) =>
-          `• <b>${i.product.nameGu}</b> × ${i.quantity}  =  ₹${i.product.price * i.quantity}`
+          `• <b>${i.product.nameGu}</b>\n    ${i.quantity} × ₹${i.product.price} = <b>₹${i.product.price * i.quantity}</b>`
       )
-      .join("\n");
+      .join("\n\n");
 
+    // Telegram: NO [P] / [J] / પાર્સલ / જૈન unless toggle was ON
     const lines = [
-      `🆕 <b>નવો ઓર્ડર #${newOrderNumber}${flagStr}</b>`,
-      `⏰ સમય: ${timeStr}`,
+      "══════════════════",
+      `🆕 <b>નવો ઓર્ડર</b>`,
+      `<b>#${newOrderNumber}</b>`,
+      "══════════════════",
+      `⏰ <b>${timeStr}</b>`,
     ];
-    if (parcel) lines.push("📦 પાર્સલ (P)");
-    if (jain) lines.push("🥗 જૈન (J)");
-    lines.push("", itemsText, "", `💰 <b>કુલ: ₹${total}</b>`, "📌 સ્થિતિ: નવો");
+    if (parcelOn) {
+      lines[2] = `<b>#${newOrderNumber}  [P]</b>`;
+      lines.push("📦 <b>પાર્સલ (P)</b>");
+    }
+    if (jainOn) {
+      if (parcelOn) lines[2] = `<b>#${newOrderNumber}  [PJ]</b>`;
+      else lines[2] = `<b>#${newOrderNumber}  [J]</b>`;
+      lines.push("🥗 <b>જૈન (J)</b>");
+    }
+    lines.push("", itemsText, "", "──────────────────", `💰 <b>કુલ: ₹${total}</b>`, "──────────────────", "📌 સ્થિતિ: <b>નવો</b>");
     const message = lines.join("\n");
 
     try {
@@ -387,11 +397,11 @@ function VoicePOS() {
       const data = await res.json();
       setStatus(
         data.success
-          ? `✅ Order #${newOrderNumber}${flagStr} saved & sent to Telegram`
-          : `✅ Order #${newOrderNumber}${flagStr} saved (Telegram: ${data.error})`
+          ? `✅ Order #${newOrderNumber} saved & sent to Telegram`
+          : `✅ Order #${newOrderNumber} saved (Telegram: ${data.error})`
       );
     } catch (err: any) {
-      setStatus(`✅ Order #${newOrderNumber}${flagStr} saved (Telegram offline)`);
+      setStatus(`✅ Order #${newOrderNumber} saved (Telegram offline)`);
     } finally {
       setOrder([]);
       setTranscript("");

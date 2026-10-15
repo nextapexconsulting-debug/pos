@@ -78,9 +78,9 @@ function Orders() {
         <div key={o.id} className={`${card} ${o.status === "cancelled" ? "opacity-50" : ""}`}>
           <div className="flex items-center gap-2">
             <span className="font-bold">#{o.order_no}</span>
-            {(o.is_parcel || o.is_jain) && (
+            {(o.is_parcel === true || o.is_jain === true) && (
               <span className="text-xs font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">
-                {[o.is_parcel ? "P" : "", o.is_jain ? "J" : ""].filter(Boolean).join("")}
+                {[o.is_parcel === true ? "P" : null, o.is_jain === true ? "J" : null].filter(Boolean).join("")}
               </span>
             )}
             <span className="text-xs text-slate-400">

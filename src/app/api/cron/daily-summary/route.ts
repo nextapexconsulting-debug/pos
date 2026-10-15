@@ -29,13 +29,13 @@ export async function GET(req: NextRequest) {
 
   const supabase = createClient(supabaseUrl, serviceKey);
 
-  // Shop hours 4 PM → 4 AM. Run cron ~4:30 AM IST.
+  // Shop hours 2 PM → 9 AM. Run cron ~9:30 AM IST.
   // At that time today_business_ist() is the night that just closed.
   let dayStr: string;
   const { data: bizDay, error: dayErr } = await supabase.rpc("today_business_ist");
   if (dayErr || !bizDay) {
     const ist = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-    ist.setHours(ist.getHours() - 16);
+    ist.setHours(ist.getHours() - 14);
     dayStr = `${ist.getFullYear()}-${String(ist.getMonth() + 1).padStart(2, "0")}-${String(ist.getDate()).padStart(2, "0")}`;
   } else {
     dayStr = String(bizDay);
@@ -77,17 +77,22 @@ export async function GET(req: NextRequest) {
     };
 
     const message = `
-📊 <b>દૈનિક સારાંશ · ${s.day}</b>
-🏪 ${s.shop_name || shop.name}
+══════════════════
+📊 <b>દૈનિક સારાંશ</b>
+<b>${s.day}</b>
+══════════════════
+🏪 <b>${s.shop_name || shop.name}</b>
 
 🧾 ઓર્ડર: <b>${s.orders}</b>
 💰 કુલ વેચાણ: <b>₹${Number(s.sales).toLocaleString("en-IN")}</b>
-  💵 Cash: ₹${Number(s.cash).toLocaleString("en-IN")}
-  📱 UPI: ₹${Number(s.upi).toLocaleString("en-IN")}
-  ⏳ Unpaid: ₹${Number(s.unpaid).toLocaleString("en-IN")}
+  💵 Cash: <b>₹${Number(s.cash).toLocaleString("en-IN")}</b>
+  📱 UPI: <b>₹${Number(s.upi).toLocaleString("en-IN")}</b>
+  ⏳ Unpaid: <b>₹${Number(s.unpaid).toLocaleString("en-IN")}</b>
 
 📉 ખર્ચ: <b>₹${Number(s.expenses).toLocaleString("en-IN")}</b>
-✅ નફો: <b>₹${Number(s.profit).toLocaleString("en-IN")}</b>
+──────────────────
+✅ <b>નફો: ₹${Number(s.profit).toLocaleString("en-IN")}</b>
+──────────────────
 `.trim();
 
     try {

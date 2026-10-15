@@ -8,15 +8,15 @@ export const supabase = createClient(
 
 /**
  * Shop business day (YYYY-MM-DD) in India time.
- * Hours are 4:00 PM → 4:00 AM, so we subtract 16 hours from IST "now".
+ * Hours are 2:00 PM → 9:00 AM, so we subtract 14 hours from IST "now".
  * Matches database today_business_ist() / order_date.
- * Example: Tue 2 AM → Monday's business day.
+ * Example: Tue 8 AM → Monday's business day.
  */
 export const todayIST = () => {
   const ist = new Date(
     new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
   );
-  ist.setHours(ist.getHours() - 16);
+  ist.setHours(ist.getHours() - 14);
   const y = ist.getFullYear();
   const m = String(ist.getMonth() + 1).padStart(2, "0");
   const d = String(ist.getDate()).padStart(2, "0");
