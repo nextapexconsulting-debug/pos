@@ -36,6 +36,7 @@ function VoicePOS() {
   const [isParcel, setIsParcel] = useState(false);
   const [isJain, setIsJain] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Mobile bottom-sheet drag
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -61,6 +62,8 @@ function VoicePOS() {
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const productsRef = useRef<Product[]>([]);
+  const wantListeningRef = useRef(false); // keeps mic alive on mobile (auto-restart)
+  const isMobileRef = useRef(false);
 
   useEffect(() => {
     const loaded = loadProducts();
@@ -69,26 +72,36 @@ function VoicePOS() {
   }, []);
 
   useEffect(() => {
-    const supported =
-      typeof window !== "undefined" &&
-      ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+    if (typeof window === "undefined") return;
 
-    setIsSupported(supported);
-
-    if (!supported) {
-      setError("Speech Recognition not supported in this browser. Use Chrome or Edge.");
-      return;
-    }
+    const ua = navigator.userAgent || "";
+    const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+    isMobileRef.current = mobile;
 
     const SpeechRecognitionAPI =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
 
+    const supported = !!SpeechRecognitionAPI;
+    setIsSupported(supported);
+
+    if (!supported) {
+      // iOS Safari does not support Web Speech API
+      const isIOS = /iPhone|iPad|iPod/i.test(ua);
+      setError(
+        isIOS
+          ? "Voice not supported on iPhone Safari. Use Chrome on Android, or search/tap products."
+          : "Speech Recognition not supported. Use Chrome or Edge, or search/tap products."
+      );
+      return;
+    }
+
     const recognition = new SpeechRecognitionAPI();
-    recognition.continuous = true;
+    // continuous=true is unreliable on many mobile browsers – use false + auto-restart
+    recognition.continuous = !mobile;
     recognition.interimResults = true;
     recognition.lang = "en-IN";
-    recognition.maxAlternatives = 1; // fewer alternatives = less wrong matches
+    recognition.maxAlternatives = 1;
 
     let lastInterim = "";
 
@@ -119,31 +132,60 @@ function VoicePOS() {
     };
 
     recognition.onend = () => {
-      setIsListening(false);
+      // Process any leftover interim text
       if (lastInterim.trim()) {
         processSpoken(lastInterim);
         lastInterim = "";
+      }
+
+      // Mobile: browser stops after each phrase – auto-restart if user still wants listening
+      if (wantListeningRef.current) {
+        setTimeout(() => {
+          if (!wantListeningRef.current || !recognitionRef.current) return;
+          try {
+            recognitionRef.current.start();
+          } catch {
+            // already starting
+          }
+        }, 280);
       } else {
+        setIsListening(false);
         setStatus("Stopped");
       }
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error("Speech error:", event.error);
-      setIsListening(false);
-      if (event.error === "not-allowed") {
-        setError("Microphone permission denied. Please allow mic access.");
-      } else if (event.error === "no-speech") {
-        setStatus("No speech detected. Try again.");
-      } else if (event.error === "network") {
-        setError("Network error – speech needs internet. Check WiFi/data and try again.");
-      } else if (event.error === "aborted") {
-        // ignore
-      } else if (event.error === "audio-capture") {
-        setError("No microphone found. Check your mic.");
-      } else {
-        setError(`Speech error: ${event.error}`);
+      const err = event.error;
+
+      if (err === "aborted") return;
+
+      if (err === "not-allowed") {
+        wantListeningRef.current = false;
+        setIsListening(false);
+        setError("Microphone blocked. Allow mic in browser settings and tap 🎤 again.");
+        return;
       }
+      if (err === "no-speech") {
+        // keep listening on mobile via onend restart; just show tip
+        setStatus("No speech – speak again");
+        return;
+      }
+      if (err === "network") {
+        // network errors are common on mobile; don't kill the session hard
+        setStatus("Network hiccup – speak again");
+        return;
+      }
+      if (err === "audio-capture") {
+        wantListeningRef.current = false;
+        setIsListening(false);
+        setError("No microphone found. Check phone mic permissions.");
+        return;
+      }
+      // Other errors: stop so user can retry
+      wantListeningRef.current = false;
+      setIsListening(false);
+      setError(`Speech error: ${err}. Tap mic to retry.`);
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
@@ -173,6 +215,7 @@ function VoicePOS() {
     recognitionRef.current = recognition;
 
     return () => {
+      wantListeningRef.current = false;
       try { recognition.stop(); } catch {}
     };
   }, []);
@@ -182,20 +225,36 @@ function VoicePOS() {
     setTranscript("");
     setInterimTranscript("");
     setLastAdded(null);
+    setError(null);
+    wantListeningRef.current = true;
     try {
       recognitionRef.current.start();
-    } catch (e) {
-      // already started
+    } catch {
+      // If already started, stop then start fresh (mobile quirk)
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+      setTimeout(() => {
+        if (!wantListeningRef.current || !recognitionRef.current) return;
+        try {
+          recognitionRef.current.start();
+        } catch {}
+      }, 200);
     }
   }, []);
 
   const stopListening = useCallback(() => {
+    wantListeningRef.current = false;
     if (!recognitionRef.current) return;
-    recognitionRef.current.stop();
+    try {
+      recognitionRef.current.stop();
+    } catch {}
+    setIsListening(false);
+    setStatus("Stopped");
   }, []);
 
   const toggleListening = () => {
-    if (isListening) {
+    if (isListening || wantListeningRef.current) {
       stopListening();
     } else {
       startListening();
@@ -343,6 +402,15 @@ ${itemsText}
   ] as const;
 
   const filteredProducts = products.filter((p) => {
+    // Search filter (English, Gujarati, keywords)
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const hit =
+        p.nameEn.toLowerCase().includes(q) ||
+        p.nameGu.toLowerCase().includes(q) ||
+        p.keywords.some((k) => k.toLowerCase().includes(q));
+      if (!hit) return false;
+    }
     if (priceTab === "all") return true;
     if (priceTab === "0-50") return p.price <= 50;
     if (priceTab === "51-100") return p.price > 50 && p.price <= 100;
@@ -393,13 +461,19 @@ ${itemsText}
           {/* Mic Control */}
           <div className="bg-orange-50 rounded-xl p-3 flex items-center gap-4 border border-orange-200 shrink-0">
             <button
-              onClick={toggleListening}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleListening();
+              }}
               disabled={!isSupported}
-              className={`relative w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all shrink-0 ${
+              className={`relative w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all shrink-0 touch-manipulation ${
                 isListening
                   ? "mic-active mic-pulse bg-orange-500 text-white"
                   : "bg-white border-2 border-orange-400 text-orange-600 hover:bg-orange-100"
               } ${!isSupported ? "opacity-50 cursor-not-allowed" : ""}`}
+              aria-label={isListening ? "Stop listening" : "Start voice"}
             >
               {isListening ? "🎙️" : "🎤"}
             </button>
@@ -424,8 +498,34 @@ ${itemsText}
             </div>
           </div>
 
-          {/* Price Tabs + Products */}
+          {/* Search + Price Tabs + Products */}
           <div className="bg-white rounded-xl border border-orange-200 flex flex-col flex-1 min-h-0 overflow-hidden shadow-sm">
+            {/* Search bar */}
+            <div className="p-2 border-b border-orange-100 shrink-0 bg-orange-50">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search product (English / Gujarati)..."
+                  className="w-full bg-white border border-orange-200 rounded-xl pl-9 pr-9 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+                  enterKeyHint="search"
+                  autoComplete="off"
+                  autoCorrect="off"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-orange-100 text-orange-600 text-xs font-bold"
+                    aria-label="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
             <div className="flex gap-1 p-2 border-b border-orange-100 overflow-x-auto shrink-0 bg-orange-50">
               {PRICE_TABS.map((tab) => (
                 <button
@@ -445,7 +545,9 @@ ${itemsText}
             <div className="flex-1 overflow-y-auto p-2">
               {filteredProducts.length === 0 ? (
                 <p className="text-center text-slate-400 py-8 text-sm">
-                  No products in this range
+                  {searchQuery.trim()
+                    ? `No products match "${searchQuery}"`
+                    : "No products in this range"}
                 </p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
