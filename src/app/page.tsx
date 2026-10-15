@@ -35,6 +35,29 @@ function VoicePOS() {
   const [priceTab, setPriceTab] = useState<string>("all");
   const [isParcel, setIsParcel] = useState(false);
   const [isJain, setIsJain] = useState(false);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
+
+  // Mobile bottom-sheet drag
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const dragStartY = useRef<number | null>(null);
+  const dragDelta = useRef(0);
+
+  const onSheetTouchStart = (e: React.TouchEvent) => {
+    dragStartY.current = e.touches[0].clientY;
+    dragDelta.current = 0;
+  };
+  const onSheetTouchMove = (e: React.TouchEvent) => {
+    if (dragStartY.current === null) return;
+    dragDelta.current = e.touches[0].clientY - dragStartY.current;
+  };
+  const onSheetTouchEnd = () => {
+    if (dragStartY.current === null) return;
+    const d = dragDelta.current;
+    dragStartY.current = null;
+    // swipe up (negative delta) → expand; swipe down → collapse
+    if (d < -40) setSheetExpanded(true);
+    else if (d > 40) setSheetExpanded(false);
+  };
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const productsRef = useRef<Product[]>([]);
@@ -330,7 +353,7 @@ ${itemsText}
   });
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex flex-col pb-24 md:pb-0">
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col pb-36 md:pb-0">
       {/* Header – orange / white */}
       <header className="bg-orange-500 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-20 shadow-md">
         <div>
@@ -559,10 +582,29 @@ ${itemsText}
         </section>
       </main>
 
-      {/* Mobile sticky bottom bar – always visible Okay + flags + cart summary */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t-2 border-orange-400 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
-        {/* Flags row */}
-        <div className="flex gap-2 px-3 pt-2">
+      {/* Mobile bottom sheet – collapsed: chips + Okay; expanded: full list with +/- */}
+      <div
+        ref={sheetRef}
+        className={`md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t-2 border-orange-400 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] transition-[max-height] duration-300 ease-out flex flex-col ${
+          sheetExpanded ? "max-h-[75vh]" : "max-h-[42vh]"
+        }`}
+      >
+        {/* Drag handle – tap or swipe up/down */}
+        <div
+          className="flex flex-col items-center pt-2 pb-1 cursor-grab active:cursor-grabbing select-none shrink-0"
+          onTouchStart={onSheetTouchStart}
+          onTouchMove={onSheetTouchMove}
+          onTouchEnd={onSheetTouchEnd}
+          onClick={() => setSheetExpanded((v) => !v)}
+        >
+          <div className="w-10 h-1 rounded-full bg-orange-300 mb-1" />
+          <span className="text-[10px] text-slate-400 font-medium">
+            {sheetExpanded ? "▼ swipe down to collapse" : "▲ swipe up for + / −"}
+          </span>
+        </div>
+
+        {/* Flags */}
+        <div className="flex gap-2 px-3 shrink-0">
           <button
             type="button"
             onClick={() => setIsParcel((v) => !v)}
@@ -586,26 +628,88 @@ ${itemsText}
             🥗 J
           </button>
         </div>
-        {/* Items strip (scrollable if many) */}
-        {order.length > 0 && (
-          <div className="px-3 py-1.5 flex gap-2 overflow-x-auto text-xs text-slate-600">
+
+        {/* Collapsed: horizontal chips */}
+        {!sheetExpanded && order.length > 0 && (
+          <div
+            className="px-3 py-1.5 flex gap-2 overflow-x-auto text-xs text-slate-600 shrink-0"
+            onClick={() => setSheetExpanded(true)}
+          >
             {order.map((i) => (
-              <span key={i.product.id} className="shrink-0 bg-orange-50 border border-orange-200 rounded-full px-2 py-0.5">
+              <span
+                key={i.product.id}
+                className="shrink-0 bg-orange-50 border border-orange-200 rounded-full px-2 py-0.5"
+              >
                 {i.quantity}× {i.product.nameEn}
               </span>
             ))}
           </div>
         )}
-        <div className="flex items-center gap-2 p-3 pt-1">
-          <div className="flex-1">
-            <div className="text-xs text-slate-500">{order.length} item{order.length === 1 ? "" : "s"}</div>
+
+        {/* Expanded: full list with + / − (scrollable) */}
+        {sheetExpanded && (
+          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
+            {order.length === 0 ? (
+              <p className="text-center text-slate-400 text-sm py-4">No items yet</p>
+            ) : (
+              order.map((item) => (
+                <div
+                  key={item.product.id}
+                  className="bg-orange-50 rounded-xl p-2.5 flex items-center gap-2 border border-orange-200"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm truncate text-slate-800">
+                      {item.product.nameEn}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      ₹{item.product.price} each
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => updateQuantity(item.product.id, -1)}
+                      className="w-8 h-8 rounded-full bg-white border border-orange-300 text-orange-700 flex items-center justify-center text-lg font-bold active:bg-orange-100"
+                    >
+                      −
+                    </button>
+                    <span className="w-6 text-center font-semibold text-sm text-slate-800">
+                      {item.quantity}
+                    </span>
+                    <button
+                      onClick={() => updateQuantity(item.product.id, 1)}
+                      className="w-8 h-8 rounded-full bg-white border border-orange-300 text-orange-700 flex items-center justify-center text-lg font-bold active:bg-orange-100"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div className="text-right min-w-[44px]">
+                    <div className="font-semibold text-orange-600 text-sm">
+                      ₹{item.product.price * item.quantity}
+                    </div>
+                    <button
+                      onClick={() => removeItem(item.product.id)}
+                      className="text-[10px] text-red-500"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Always-visible footer: total + Okay */}
+        <div className="flex items-center gap-2 p-3 border-t border-orange-100 shrink-0 bg-white">
+          <div className="flex-1" onClick={() => setSheetExpanded((v) => !v)}>
+            <div className="text-xs text-slate-500">
+              {order.length} item{order.length === 1 ? "" : "s"}
+              {!sheetExpanded && order.length > 0 ? " · tap to edit" : ""}
+            </div>
             <div className="text-lg font-bold text-orange-600">₹{total}</div>
           </div>
           {order.length > 0 && (
-            <button
-              onClick={clearOrder}
-              className="text-xs text-red-500 px-2 py-2"
-            >
+            <button onClick={clearOrder} className="text-xs text-red-500 px-2 py-2">
               Clear
             </button>
           )}
