@@ -111,7 +111,7 @@ function Body() {
       <div className="flex gap-2 overflow-x-auto pb-1">
         {REPORTS.map((r) => (
           <button key={r.id} onClick={() => setId(r.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap ${id === r.id ? "bg-emerald-600" : "bg-slate-700 hover:bg-slate-600"}`}>{r.label}</button>
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap border transition-colors ${id === r.id ? "bg-orange-500 text-white border-orange-500" : "bg-white text-slate-700 border-orange-200 hover:bg-orange-50"}`}>{r.label}</button>
         ))}
       </div>
 
@@ -128,15 +128,15 @@ function Body() {
 
       <div className={card}>
         <div className="flex items-start gap-2 mb-2">
-          <div className="flex-1"><h2 className="font-semibold">{rep.label}</h2><p className="text-xs text-slate-400">{rep.hint}</p></div>
+          <div className="flex-1"><h2 className="font-semibold">{rep.label}</h2><p className="text-xs text-slate-500">{rep.hint}</p></div>
           <button className={btn2} disabled={!rows.length} onClick={() => downloadCSV(`${rep.id}_${from}_${to}.csv`, rows.map((r) => Object.fromEntries(rep.cols.map((c) => [c.label, r[c.key]]))))}>⬇ CSV</button>
           <button className={btn2} onClick={() => window.print()}>🖨 Print</button>
         </div>
-        {busy ? <p className="text-slate-500 text-sm py-6 text-center">Loading…</p> : err ? <p className="text-red-400 text-sm">{err}</p> : <Table cols={rep.cols} rows={rows} totals={rep.totals} />}
+        {busy ? <p className="text-slate-500 text-sm py-6 text-center">Loading…</p> : err ? <p className="text-red-500 text-sm">{err}</p> : <Table cols={rep.cols} rows={rows} totals={rep.totals} />}
       </div>
 
       <div className={`${card} flex items-center gap-3`}>
-        <p className="text-xs text-slate-400 flex-1">Keeping the app fast: after ~6 months you can move old detail to the archive. Daily totals stay in reports forever.</p>
+        <p className="text-xs text-slate-500 flex-1">Keeping the app fast: after ~6 months you can move old detail to the archive. Daily totals stay in reports forever.</p>
         <button className={btn2} onClick={archive}>🗄 Archive &gt; 6 months</button>
       </div>
     </>
