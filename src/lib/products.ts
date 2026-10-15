@@ -43,201 +43,222 @@ export const NUMBER_MAP: Record<string, number> = {
 };
 
 export const DEFAULT_PRODUCTS: Product[] = [
-  // ===== SANDWICH =====
   {
     id: "veg-sandwich",
     nameEn: "Veg Sandwich",
-    nameGu: "વેજ સેન્ડવિચ",
-    keywords: ["veg", "sandwich", "વેજ", "સેન્ડવિચ", "વેજસેન્ડવિચ"],
-    price: 50,
+    nameGu: "વેજીટેબલ સેન્ડવીચ",
+    keywords: ["veg", "vegetable", "sandwich", "વેજ", "વેજીટેબલ", "સેન્ડવીચ"],
+    price: 60,
   },
   {
     id: "aloo-mutter-sandwich",
     nameEn: "Aloo Mutter Sandwich",
-    nameGu: "આલૂ મટર સેન્ડવિચ",
-    keywords: ["aloo", "mutter", "sandwich", "આલૂ", "મટર", "સેન્ડવિચ"],
-    price: 50,
+    nameGu: "આલુમટર સેન્ડવીચ",
+    keywords: ["aloo", "mutter", "sandwich", "આલુ", "મટર", "સેન્ડવીચ"],
+    price: 60,
   },
   {
     id: "bread-butter-sandwich",
     nameEn: "Bread Butter Sandwich",
-    nameGu: "બ્રેડ બટર સેન્ડવિચ",
-    keywords: ["bread", "butter", "sandwich", "બ્રેડ", "બટર", "સેન્ડવિચ"],
-    price: 50,
+    nameGu: "બ્રેડ બટર સેન્ડવીચ",
+    keywords: ["bread", "butter", "sandwich", "બ્રેડ", "બટર", "સેન્ડવીચ"],
+    price: 60,
   },
   {
     id: "chatni-sandwich",
     nameEn: "Chatni Sandwich",
-    nameGu: "ચટણી સેન્ડવિચ",
-    keywords: ["chatni", "chutney", "sandwich", "ચટણી", "સેન્ડવિચ"],
-    price: 50,
+    nameGu: "ચટણી સેન્ડવીચ",
+    keywords: ["chatni", "chutney", "sandwich", "ચટણી", "સેન્ડવીચ"],
+    price: 60,
   },
   {
     id: "jam-sandwich",
     nameEn: "Jam Sandwich",
-    nameGu: "જામ સેન્ડવિચ",
-    keywords: ["jam", "sandwich", "જામ", "સેન્ડવિચ"],
-    price: 50,
+    nameGu: "જામ સેન્ડવીચ",
+    keywords: ["jam", "sandwich", "જામ", "સેન્ડવીચ"],
+    price: 60,
   },
   {
     id: "veg-jam-sandwich",
     nameEn: "Veg Jam Sandwich",
-    nameGu: "વેજ જામ સેન્ડવિચ",
-    keywords: ["veg", "jam", "sandwich", "વેજ", "જામ", "સેન્ડવિચ"],
-    price: 90,
+    nameGu: "વેજીટેબલ જામ સેન્ડવીચ",
+    keywords: ["veg", "jam", "sandwich", "વેજ", "જામ", "સેન્ડવીચ"],
+    price: 70,
   },
   {
     id: "cheese-sandwich",
     nameEn: "Cheese Sandwich",
-    nameGu: "ચીઝ સેન્ડવિચ",
-    keywords: ["cheese", "sandwich", "ચીઝ", "સેન્ડવિચ", "ચીઝસેન્ડવિચ"],
+    nameGu: "ચીઝ સેન્ડવીચ",
+    keywords: ["cheese", "sandwich", "ચીઝ", "સેન્ડવીચ"],
     price: 100,
   },
   {
     id: "cheese-jam-sandwich",
     nameEn: "Cheese Jam Sandwich",
-    nameGu: "ચીઝ જામ સેન્ડવિચ",
-    keywords: ["cheese", "jam", "sandwich", "ચીઝ", "જામ", "સેન્ડવિચ"],
-    price: 100,
+    nameGu: "ચીઝ જામ સેન્ડવીચ",
+    keywords: ["cheese", "jam", "sandwich", "ચીઝ", "જામ", "સેન્ડવીચ"],
+    price: 120,
   },
   {
     id: "aloo-mutter-cheese",
     nameEn: "Aloo Mutter Cheese",
-    nameGu: "આલૂ મટર ચીઝ",
-    keywords: ["aloo", "mutter", "cheese", "આલૂ", "મટર", "ચીઝ"],
-    price: 100,
+    nameGu: "આલુમટર ચીઝ",
+    keywords: ["aloo", "mutter", "cheese", "આલુ", "મટર", "ચીઝ"],
+    price: 120,
   },
   {
     id: "chatni-cheese",
     nameEn: "Chatni Cheese",
-    nameGu: "ચટણી ચીઝ",
+    nameGu: "ચીઝ ચટણી",
     keywords: ["chatni", "chutney", "cheese", "ચટણી", "ચીઝ"],
-    price: 100,
+    price: 120,
   },
   {
     id: "vegetable-cheese",
     nameEn: "Vegetable Cheese",
     nameGu: "વેજીટેબલ ચીઝ",
     keywords: ["vegetable", "cheese", "વેજીટેબલ", "ચીઝ"],
-    price: 100,
+    price: 120,
+  },
+  {
+    id: "choco-2-slice-sandwich",
+    nameEn: "Choco 2 Slice Sandwich",
+    nameGu: "ચોકલેટ 2 સ્લાઈસ સેન્ડવીચ",
+    keywords: ["choco", "chocolate", "slice", "sandwich", "ચોકલેટ", "સ્લાઈસ", "સેન્ડવીચ"],
+    price: 120,
   },
   {
     id: "three-in-one-sandwich",
     nameEn: "Three in One Sandwich",
-    nameGu: "થ્રી ઇન વન સેન્ડવિચ",
-    keywords: ["three", "one", "sandwich", "થ્રી", "વન", "સેન્ડવિચ"],
-    price: 140,
+    nameGu: "3 ઈન 1 સેન્ડવીચ",
+    keywords: ["three", "one", "sandwich", "થ્રી", "સેન્ડવીચ"],
+    price: 150,
   },
-
-  // ===== SPECIAL SANDWICH =====
   {
     id: "sp-ghooghara-sandwich",
-    nameEn: "Sp. Ghooghara Sandwich",
-    nameGu: "સ્પે. ઘૂઘરા સેન્ડવિચ",
-    keywords: ["ghooghara", "ghughra", "special", "sandwich", "ઘૂઘરા", "સેન્ડવિચ"],
+    nameEn: "Sp. Ghooghra Sandwich",
+    nameGu: "સ્પે. ઘુઘરા સેન્ડવીચ",
+    keywords: ["ghooghra", "ghooghara", "ghughra", "special", "sandwich", "ઘુઘરા", "સેન્ડવીચ"],
     price: 160,
-  },
-  {
-    id: "sp-paneer-tandoori",
-    nameEn: "Sp. Paneer Tandoori",
-    nameGu: "સ્પે. પનીર તંદૂરી",
-    keywords: ["paneer", "tandoori", "special", "પનીર", "તંદૂરી"],
-    price: 200,
   },
   {
     id: "sp-maxican-sandwich",
     nameEn: "Sp. Maxican Sandwich",
-    nameGu: "સ્પે. મેક્સિકન સેન્ડવિચ",
-    keywords: ["maxican", "mexican", "special", "sandwich", "મેક્સિકન", "સેન્ડવિચ"],
+    nameGu: "સ્પે. મેક્સીકન સેન્ડવીચ",
+    keywords: ["maxican", "mexican", "special", "sandwich", "મેક્સીકન", "સેન્ડવીચ"],
+    price: 210,
+  },
+  {
+    id: "cheese-corn-sandwich",
+    nameEn: "Cheese Corn Sandwich",
+    nameGu: "ચીઝ કોર્ન સેન્ડવીચ",
+    keywords: ["cheese", "corn", "sandwich", "ચીઝ", "કોર્ન", "સેન્ડવીચ"],
     price: 200,
+  },
+  {
+    id: "sp-paneer-tandoori",
+    nameEn: "Sp. Paneer Tandoori",
+    nameGu: "સ્પે. પનીર તંદુરી",
+    keywords: ["paneer", "tandoori", "special", "પનીર", "તંદુરી"],
+    price: 210,
   },
   {
     id: "sp-tandoori-sandwich",
     nameEn: "Sp. Tandoori Sandwich",
-    nameGu: "સ્પે. તંદૂરી સેન્ડવિચ",
-    keywords: ["tandoori", "special", "sandwich", "તંદૂરી", "સેન્ડવિચ"],
-    price: 190,
+    nameGu: "સ્પે. તંદુરી સેન્ડવીચ",
+    keywords: ["tandoori", "special", "sandwich", "તંદુરી", "સેન્ડવીચ"],
+    price: 200,
   },
-
-  // ===== PIZZA =====
   {
     id: "italian-pizza",
     nameEn: "Italian Pizza",
-    nameGu: "ઈટાલિયન પિઝા",
-    keywords: ["italian", "pizza", "ઈટાલિયન", "પિઝા"],
-    price: 160,
+    nameGu: "ઈટાલીયન પીઝા",
+    keywords: ["italian", "pizza", "ઈટાલીયન", "પીઝા"],
+    price: 150,
   },
   {
     id: "jain-pizza",
     nameEn: "Jain Pizza",
-    nameGu: "જૈન પિઝા",
-    keywords: ["jain", "pizza", "જૈન", "પિઝા"],
-    price: 170,
+    nameGu: "જૈન પીઝા",
+    keywords: ["jain", "pizza", "જૈન", "પીઝા"],
+    price: 150,
   },
   {
     id: "cheese-bake-pizza",
     nameEn: "Cheese Bake Pizza",
-    nameGu: "ચીઝ બેક પિઝા",
-    keywords: ["cheese", "bake", "pizza", "ચીઝ", "બેક", "પિઝા"],
-    price: 170,
+    nameGu: "ચીઝ બેક પીઝા",
+    keywords: ["cheese", "bake", "pizza", "ચીઝ", "બેક", "પીઝા"],
+    price: 180,
   },
   {
     id: "vegetable-pizza",
     nameEn: "Vegetable Pizza",
-    nameGu: "વેજીટેબલ પિઝા",
-    keywords: ["vegetable", "veg", "pizza", "વેજીટેબલ", "પિઝા"],
-    price: 200,
+    nameGu: "વેજીટેબલ પીઝા",
+    keywords: ["vegetable", "veg", "pizza", "વેજીટેબલ", "પીઝા"],
+    price: 180,
   },
   {
     id: "double-cheese-pizza",
     nameEn: "Double Cheese Pizza",
-    nameGu: "ડબલ ચીઝ પિઝા",
-    keywords: ["double", "cheese", "pizza", "ડબલ", "ચીઝ", "પિઝા"],
-    price: 200,
+    nameGu: "ડબલ ચીઝ પીઝા",
+    keywords: ["double", "cheese", "pizza", "ડબલ", "ચીઝ", "પીઝા"],
+    price: 210,
   },
   {
-    id: "double-vegetable-pizza",
-    nameEn: "Double Vegetable Pizza",
-    nameGu: "ડબલ વેજીટેબલ પિઝા",
-    keywords: ["double", "vegetable", "pizza", "ડબલ", "વેજીટેબલ", "પિઝા"],
-    price: 190,
+    id: "double-cheese-bake-pizza",
+    nameEn: "Double Cheese Bake Pizza",
+    nameGu: "ડબલ ચીઝ બેક પીઝા",
+    keywords: ["double", "cheese", "bake", "pizza", "ડબલ", "ચીઝ", "બેક", "પીઝા"],
+    price: 210,
   },
   {
     id: "pineapple-pizza",
     nameEn: "Pineapple Pizza",
-    nameGu: "પાઈનેપલ પિઝા",
-    keywords: ["pineapple", "pizza", "પાઈનેપલ", "પિઝા"],
-    price: 190,
+    nameGu: "પાઈનેપલ પીઝા",
+    keywords: ["pineapple", "pizza", "પાઈનેપલ", "પીઝા"],
+    price: 200,
+  },
+  {
+    id: "chocolate-pizza",
+    nameEn: "Chocolate Pizza",
+    nameGu: "ચોકલેટ પીઝા",
+    keywords: ["chocolate", "choco", "pizza", "ચોકલેટ", "પીઝા"],
+    price: 200,
   },
   {
     id: "dry-fruit-pizza",
     nameEn: "Dry Fruit Pizza",
-    nameGu: "ડ્રાય ફ્રૂટ પિઝા",
-    keywords: ["dry", "fruit", "pizza", "ડ્રાય", "ફ્રૂટ", "પિઝા"],
-    price: 200,
+    nameGu: "ડ્રાયફ્રુટ પીઝા",
+    keywords: ["dry", "fruit", "pizza", "ડ્રાય", "ફ્રુટ", "પીઝા"],
+    price: 210,
   },
   {
     id: "chocolate-pineapple-pizza",
     nameEn: "Chocolate Pineapple Pizza",
-    nameGu: "ચોકલેટ પાઈનેપલ પિઝા",
-    keywords: ["chocolate", "pineapple", "pizza", "ચોકલેટ", "પાઈનેપલ", "પિઝા"],
-    price: 190,
+    nameGu: "ચોકલેટ પાઈનેપલ પીઝા",
+    keywords: ["chocolate", "pineapple", "pizza", "ચોકલેટ", "પાઈનેપલ", "પીઝા"],
+    price: 200,
   },
-
-  // ===== KRISHNA SP. VARIETY =====
+  {
+    id: "margherita-pizza",
+    nameEn: "Margherita Pizza",
+    nameGu: "માર્ગેરીટા પિઝા",
+    keywords: ["margherita", "pizza", "માર્ગેરીટા", "પિઝા", "પીઝા"],
+    price: 170,
+  },
   {
     id: "sp-pineapple-sandwich",
     nameEn: "Sp. Pineapple Sandwich",
-    nameGu: "સ્પે. પાઈનેપલ સેન્ડવિચ",
-    keywords: ["pineapple", "special", "sandwich", "પાઈનેપલ", "સેન્ડવિચ"],
-    price: 150,
+    nameGu: "સ્પે. પાઈનેપલ સેન્ડવીચ",
+    keywords: ["pineapple", "special", "sandwich", "પાઈનેપલ", "સેન્ડવીચ"],
+    price: 170,
   },
   {
     id: "sp-chocolate-sandwich",
     nameEn: "Sp. Chocolate Sandwich",
-    nameGu: "સ્પે. ચોકલેટ સેન્ડવિચ",
-    keywords: ["chocolate", "special", "sandwich", "ચોકલેટ", "સેન્ડવિચ"],
-    price: 160,
+    nameGu: "સ્પે. ચોકલેટ સેન્ડવીચ",
+    keywords: ["chocolate", "choco", "special", "sandwich", "ચોકલેટ", "સેન્ડવીચ"],
+    price: 200,
   },
   {
     id: "chilli-cheese-toast",
@@ -256,80 +277,78 @@ export const DEFAULT_PRODUCTS: Product[] = [
   {
     id: "kulfi-sandwich",
     nameEn: "Kulfi Sandwich",
-    nameGu: "કુલ્ફી સેન્ડવિચ",
-    keywords: ["kulfi", "sandwich", "કુલ્ફી", "સેન્ડવિચ"],
-    price: 250,
+    nameGu: "કુલ્ફી સેન્ડવીચ",
+    keywords: ["kulfi", "sandwich", "કુલ્ફી", "સેન્ડવીચ"],
+    price: 260,
   },
   {
     id: "chocolate-rabdi-sandwich",
     nameEn: "Chocolate Rabdi Sandwich",
-    nameGu: "ચોકલેટ રબડી સેન્ડવિચ",
-    keywords: ["chocolate", "rabdi", "sandwich", "ચોકલેટ", "રબડી", "સેન્ડવિચ"],
+    nameGu: "ચોકલેટ રબડી સેન્ડવીચ",
+    keywords: ["chocolate", "rabdi", "sandwich", "ચોકલેટ", "રબડી", "સેન્ડવીચ"],
     price: 200,
   },
   {
     id: "chocolate-rabdi-icecream",
     nameEn: "Chocolate Rabdi Ice Cream",
-    nameGu: "ચોકલેટ રબડી આઈસ્ક્રીમ",
-    keywords: ["chocolate", "rabdi", "ice", "cream", "ચોકલેટ", "રબડી", "આઈસ્ક્રીમ"],
-    price: 190,
+    nameGu: "ચોકલેટ રબડી આઈસક્રીમ",
+    keywords: ["chocolate", "rabdi", "ice", "cream", "ચોકલેટ", "રબડી", "આઈસક્રીમ"],
+    price: 250,
   },
   {
     id: "ice-cream-sandwich",
     nameEn: "Ice Cream Sandwich",
-    nameGu: "આઈસ્ક્રીમ સેન્ડવિચ",
-    keywords: ["ice", "cream", "sandwich", "આઈસ્ક્રીમ", "સેન્ડવિચ"],
+    nameGu: "આઈસક્રીમ સેન્ડવીચ",
+    keywords: ["ice", "cream", "sandwich", "આઈસક્રીમ", "સેન્ડવીચ"],
     price: 220,
   },
   {
     id: "double-ice-cream-sandwich",
     nameEn: "Double Ice Cream Sandwich",
-    nameGu: "ડબલ આઈસ્ક્રીમ સેન્ડવિચ",
-    keywords: ["double", "ice", "cream", "sandwich", "ડબલ", "આઈસ્ક્રીમ", "સેન્ડવિચ"],
-    price: 250,
+    nameGu: "ડબલ આઈસક્રીમ સેન્ડવીચ",
+    keywords: ["double", "ice", "cream", "sandwich", "ડબલ", "આઈસક્રીમ", "સેન્ડવીચ"],
+    price: 260,
   },
   {
     id: "chocolate-pineapple-mix",
     nameEn: "Chocolate Pineapple Mix",
-    nameGu: "ચોકલેટ પાઈનેપલ મિક્સ",
-    keywords: ["chocolate", "pineapple", "mix", "ચોકલેટ", "પાઈનેપલ", "મિક્સ"],
-    price: 190,
-  },
-  {
-    id: "choco-pineapple-mix-icecream",
-    nameEn: "Choco Pineapple Mix Icecream",
-    nameGu: "ચોકો પાઈનેપલ મિક્સ આઈસ્ક્રીમ",
-    keywords: ["choco", "chocolate", "pineapple", "mix", "icecream", "ચોકો", "પાઈનેપલ", "આઈસ્ક્રીમ"],
-    price: 220,
+    nameGu: "ચોકલેટ પાઈનેપલ મીક્ષ",
+    keywords: ["chocolate", "pineapple", "mix", "ચોકલેટ", "પાઈનેપલ", "મીક્ષ"],
+    price: 210,
   },
   {
     id: "chocolate-ice-cream",
     nameEn: "Chocolate Ice Cream",
-    nameGu: "ચોકલેટ આઈસ્ક્રીમ",
-    keywords: ["chocolate", "ice", "cream", "ચોકલેટ", "આઈસ્ક્રીમ"],
-    price: 200,
+    nameGu: "ચોકલેટ આઈસક્રીમ",
+    keywords: ["chocolate", "ice", "cream", "ચોકલેટ", "આઈસક્રીમ"],
+    price: 240,
+  },
+  {
+    id: "choco-pineapple-mix-icecream",
+    nameEn: "Choco Pineapple Mix Icecream",
+    nameGu: "ચોકલેટ પાઈનેપલ મીક્ષ આઈસક્રીમ",
+    keywords: ["choco", "chocolate", "pineapple", "mix", "ice", "cream", "ચોકલેટ", "પાઈનેપલ", "આઈસક્રીમ"],
+    price: 250,
   },
   {
     id: "pineapple-ice-cream-sandwich",
     nameEn: "Pineapple Ice Cream Sandwich",
-    nameGu: "પાઈનેપલ આઈસ્ક્રીમ સેન્ડવિચ",
-    keywords: ["pineapple", "ice", "cream", "sandwich", "પાઈનેપલ", "આઈસ્ક્રીમ", "સેન્ડવિચ"],
-    price: 200,
+    nameGu: "પાઈનેપલ આઈસક્રીમ સેન્ડવીચ",
+    keywords: ["pineapple", "ice", "cream", "sandwich", "પાઈનેપલ", "આઈસક્રીમ", "સેન્ડવીચ"],
+    price: 240,
   },
-
-  // ===== TOAST SANDWICH =====
   {
     id: "vegetable-toast",
     nameEn: "Vegetable Toast",
     nameGu: "વેજીટેબલ ટોસ્ટ",
-    keywords: ["vegetable", "toast", "વેજીટેબલ", "ટોસ્ટ"],
+    keywords: ["vegetable", "veg", "toast", "વેજીટેબલ", "ટોસ્ટ"],
     price: 100,
   },
   {
     id: "aloo-mutter-toast",
     nameEn: "Aloo Mutter Toast",
-    nameGu: "આલૂ મટર ટોસ્ટ",
-    keywords: ["aloo", "mutter", "toast", "આલૂ", "મટર", "ટોસ્ટ"],
+    nameGu: "આલુમટર ટોસ્ટ",
+    keywords: ["aloo", "mutter", "toast", "આલુ", "મટર", "ટોસ્ટ"],
     price: 100,
   },
   {
@@ -337,89 +356,97 @@ export const DEFAULT_PRODUCTS: Product[] = [
     nameEn: "Bread Butter Toast",
     nameGu: "બ્રેડ બટર ટોસ્ટ",
     keywords: ["bread", "butter", "toast", "બ્રેડ", "બટર", "ટોસ્ટ"],
-    price: 90,
+    price: 100,
   },
   {
     id: "cheese-veg-toast",
     nameEn: "Cheese Veg Toast",
     nameGu: "ચીઝ વેજ ટોસ્ટ",
     keywords: ["cheese", "veg", "toast", "ચીઝ", "વેજ", "ટોસ્ટ"],
-    price: 150,
+    price: 160,
   },
   {
-    id: "cheese-aloomutter-toast",
-    nameEn: "Cheese Aloomutter Toast",
-    nameGu: "ચીઝ આલૂમટર ટોસ્ટ",
-    keywords: ["cheese", "aloo", "mutter", "toast", "ચીઝ", "આલૂ", "મટર", "ટોસ્ટ"],
-    price: 150,
+    id: "cheese-aloo-mutter-toast",
+    nameEn: "Cheese Aloo Mutter Toast",
+    nameGu: "ચીઝ આલુમટર ટોસ્ટ",
+    keywords: ["cheese", "aloo", "mutter", "toast", "ચીઝ", "આલુ", "મટર", "ટોસ્ટ"],
+    price: 160,
   },
   {
     id: "cheese-chatni-toast",
     nameEn: "Cheese Chatni Toast",
-    nameGu: "ચીઝ ચટણી ટોસ્ટ",
-    keywords: ["cheese", "chatni", "chutney", "toast", "ચીઝ", "ચટણી", "ટોસ્ટ"],
-    price: 160,
+    nameGu: "ચીઝ ચટની ટોસ્ટ",
+    keywords: ["cheese", "chatni", "chutney", "toast", "ચીઝ", "ચટની", "ટોસ્ટ"],
+    price: 170,
   },
   {
     id: "jam-toast",
     nameEn: "Jam Toast",
     nameGu: "જામ ટોસ્ટ",
     keywords: ["jam", "toast", "જામ", "ટોસ્ટ"],
-    price: 90,
+    price: 100,
   },
   {
     id: "cheese-toast",
     nameEn: "Cheese Toast",
     nameGu: "ચીઝ ટોસ્ટ",
     keywords: ["cheese", "toast", "ચીઝ", "ટોસ્ટ"],
-    price: 160,
+    price: 170,
   },
   {
     id: "cheese-jam-toast",
     nameEn: "Cheese Jam Toast",
     nameGu: "ચીઝ જામ ટોસ્ટ",
     keywords: ["cheese", "jam", "toast", "ચીઝ", "જામ", "ટોસ્ટ"],
-    price: 170,
+    price: 180,
   },
   {
     id: "three-in-one-club-toast",
     nameEn: "Three in One Club Toast",
-    nameGu: "થ્રી ઇન વન ક્લબ ટોસ્ટ",
-    keywords: ["three", "one", "club", "toast", "થ્રી", "ક્લબ", "ટોસ્ટ"],
-    price: 190,
+    nameGu: "3 ઈન 1 (ક્લબ) ટોસ્ટ",
+    keywords: ["three", "one", "club", "toast", "ક્લબ", "ટોસ્ટ"],
+    price: 160,
   },
   {
     id: "selfi-toast-sandwich",
     nameEn: "Selfi Toast Sandwich",
-    nameGu: "સેલ્ફી ટોસ્ટ સેન્ડવિચ",
-    keywords: ["selfi", "selfie", "toast", "sandwich", "સેલ્ફી", "ટોસ્ટ", "સેન્ડવિચ"],
-    price: 190,
+    nameGu: "સેલ્ફી ટોસ્ટ સેન્ડવીચ",
+    keywords: ["selfi", "selfie", "toast", "sandwich", "સેલ્ફી", "ટોસ્ટ", "સેન્ડવીચ"],
+    price: 200,
   },
   {
     id: "pineapple-toast-sandwich",
     nameEn: "Pineapple Toast Sandwich",
-    nameGu: "પાઈનેપલ ટોસ્ટ સેન્ડવિચ",
-    keywords: ["pineapple", "toast", "sandwich", "પાઈનેપલ", "ટોસ્ટ", "સેન્ડવિચ"],
-    price: 170,
+    nameGu: "પાઈનેપલ ટોસ્ટ સેન્ડવીચ",
+    keywords: ["pineapple", "toast", "sandwich", "પાઈનેપલ", "ટોસ્ટ", "સેન્ડવીચ"],
+    price: 180,
   },
   {
     id: "bread-butter-slice",
     nameEn: "Bread Butter Slice",
-    nameGu: "બ્રેડ બટર સ્લાઇસ",
-    keywords: ["bread", "butter", "slice", "બ્રેડ", "બટર", "સ્લાઇસ"],
-    price: 20,
+    nameGu: "બ્રેડ બટર સ્લાઈસ",
+    keywords: ["bread", "butter", "slice", "બ્રેડ", "બટર", "સ્લાઈસ"],
+    price: 30,
+  },
+  {
+    id: "sing-sev-slice",
+    nameEn: "Sing Sev Slice",
+    nameGu: "સીંગ સેવ સ્લાઈસ",
+    keywords: ["sing", "sev", "slice", "સીંગ", "સેવ", "સ્લાઈસ"],
+    price: 30,
   },
 ];
 
-const STORAGE_KEY = "pos-voice-products";
+const CACHE_KEY = "pos-voice-products";
 
+/** Sync read from local cache only (fast paint). Prefer fetchShopProducts for real data. */
 export function loadProducts(): Product[] {
   if (typeof window === "undefined") return DEFAULT_PRODUCTS;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(CACHE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed as Product[];
     }
   } catch {
     // ignore
@@ -427,9 +454,88 @@ export function loadProducts(): Product[] {
   return DEFAULT_PRODUCTS;
 }
 
-export function saveProducts(products: Product[]): void {
+function cacheLocally(products: Product[]): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(products));
+  } catch {
+    // ignore quota
+  }
+}
+
+/** @deprecated Use saveShopProducts – kept so old call sites compile during migration */
+export function saveProducts(products: Product[]): void {
+  cacheLocally(products);
+}
+
+/**
+ * Load menu for the logged-in user's shop from Supabase.
+ * If the shop has no products yet, seeds DEFAULT_PRODUCTS once.
+ * Always updates local cache for offline/fast start.
+ */
+export async function fetchShopProducts(): Promise<Product[]> {
+  const { supabase } = await import("./supabase");
+  const { data, error } = await supabase.rpc("list_menu_products");
+  if (error) {
+    console.warn("list_menu_products failed, using cache:", error.message);
+    return loadProducts();
+  }
+  const list = (data as Product[]) || [];
+  if (list.length > 0) {
+    cacheLocally(list);
+    return list;
+  }
+  // Empty shop menu → seed defaults so POS is usable immediately
+  const seeded = await saveShopProducts(DEFAULT_PRODUCTS);
+  return seeded;
+}
+
+/** Replace entire shop menu in DB + local cache. */
+export async function saveShopProducts(products: Product[]): Promise<Product[]> {
+  const { supabase } = await import("./supabase");
+  const payload = products.map((p) => ({
+    id: p.id,
+    nameEn: p.nameEn,
+    nameGu: p.nameGu,
+    price: p.price,
+    keywords: p.keywords,
+  }));
+  const { error } = await supabase.rpc("replace_menu_products", { p_items: payload });
+  if (error) {
+    console.error("replace_menu_products:", error.message);
+    // still cache locally so UI works; user can retry
+    cacheLocally(products);
+    throw new Error(error.message);
+  }
+  cacheLocally(products);
+  return products;
+}
+
+/** Add or update one product for this shop. */
+export async function upsertShopProduct(product: Product): Promise<void> {
+  const { supabase } = await import("./supabase");
+  const { error } = await supabase.rpc("upsert_menu_product", {
+    p_code: product.id,
+    p_name_en: product.nameEn,
+    p_name_gu: product.nameGu,
+    p_price: product.price,
+    p_keywords: product.keywords,
+  });
+  if (error) throw new Error(error.message);
+  // refresh cache
+  const current = loadProducts();
+  const idx = current.findIndex((p) => p.id === product.id);
+  if (idx >= 0) current[idx] = product;
+  else current.push(product);
+  cacheLocally(current);
+}
+
+/** Soft-delete one product for this shop. */
+export async function deleteShopProduct(productId: string): Promise<void> {
+  const { supabase } = await import("./supabase");
+  const { error } = await supabase.rpc("delete_menu_product", { p_code: productId });
+  if (error) throw new Error(error.message);
+  cacheLocally(loadProducts().filter((p) => p.id !== productId));
 }
 
 export function makeProductId(nameEn: string): string {

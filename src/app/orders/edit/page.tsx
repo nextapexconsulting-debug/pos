@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import PageShell, { card, input, btn, btn2 } from "@/components/PageShell";
 import { useAccess } from "@/components/AuthGate";
 import { supabase, todayIST, inr } from "@/lib/supabase";
-import { Product, loadProducts } from "@/lib/products";
+import { Product, loadProducts, fetchShopProducts } from "@/lib/products";
 
 interface Item {
   id?: string;
@@ -54,6 +54,7 @@ function EditOrder() {
 
   useEffect(() => {
     setProducts(loadProducts());
+    fetchShopProducts().then(setProducts).catch(() => {});
   }, []);
 
   const load = useCallback(async () => {
@@ -131,6 +132,8 @@ function EditOrder() {
     }
     setBusy(true);
     setMsg("");
+    const parcel = isParcel === true;
+    const jain = isJain === true;
     const { data, error } = await supabase.rpc("update_order", {
       p_order: selected.id,
       p_items: items.map((i) => ({
@@ -141,8 +144,8 @@ function EditOrder() {
         price: i.price,
         qty: i.qty,
       })),
-      p_is_parcel: isParcel,
-      p_is_jain: isJain,
+      p_is_parcel: parcel,
+      p_is_jain: jain,
     });
     setBusy(false);
     if (error) {
@@ -151,21 +154,22 @@ function EditOrder() {
     }
     setMsg(`✅ Order #${selected.order_no} updated · ₹${data?.total ?? total}`);
 
-    // Notify Telegram of edit
+    // Telegram: only mention P / J when selected
     const flags: string[] = [];
-    if (isParcel) flags.push("P");
-    if (isJain) flags.push("J");
+    if (parcel) flags.push("P");
+    if (jain) flags.push("J");
     const flagStr = flags.length ? ` [${flags.join("")}]` : "";
     const itemsText = items
       .map((i) => `• <b>${i.name_gu || i.name_en}</b> × ${i.qty}  =  ₹${i.price * i.qty}`)
       .join("\n");
-    const message = `
-✏️ <b>ઓર્ડર અપડેટ #${selected.order_no}${flagStr}</b>
-${isParcel ? "📦 પાર્સલ (P)\n" : ""}${isJain ? "🥗 જૈન (J)\n" : ""}
-${itemsText}
+    const lines = [
+      `✏️ <b>ઓર્ડર અપડેટ #${selected.order_no}${flagStr}</b>`,
+    ];
+    if (parcel) lines.push("📦 પાર્સલ (P)");
+    if (jain) lines.push("🥗 જૈન (J)");
+    lines.push("", itemsText, "", `💰 <b>કુલ: ₹${data?.total ?? total}</b>`);
+    const message = lines.join("\n");
 
-💰 <b>કુલ: ₹${data?.total ?? total}</b>
-`.trim();
     try {
       await fetch("/api/send-telegram", {
         method: "POST",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Product, loadProducts } from "@/lib/products";
+import { Product, loadProducts, fetchShopProducts } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
 import AuthGate from "@/components/AuthGate";
 import NavLinks from "@/components/NavLinks";
@@ -66,9 +66,35 @@ function VoicePOS() {
   const isMobileRef = useRef(false);
 
   useEffect(() => {
-    const loaded = loadProducts();
-    setProducts(loaded);
-    productsRef.current = loaded;
+    // Fast paint from cache, then refresh from shop DB
+    const cached = loadProducts();
+    setProducts(cached);
+    productsRef.current = cached;
+
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const list = await fetchShopProducts();
+        if (cancelled) return;
+        setProducts(list);
+        productsRef.current = list;
+      } catch (e) {
+        console.warn("Could not load shop menu", e);
+      }
+    };
+    refresh();
+
+    // When user comes back to this tab/device, pull latest prices from shop menu
+    const onFocus = () => { refresh(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refresh();
+    });
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
   useEffect(() => {
@@ -295,6 +321,10 @@ function VoicePOS() {
     setIsSending(true);
     setStatus("Saving order...");
 
+    // Only true when user explicitly tapped P / J (default is false)
+    const parcel = isParcel === true;
+    const jain = isJain === true;
+
     const { data: saved, error: saveErr } = await supabase.rpc("place_order", {
       p_items: order.map((i) => ({
         product_id: i.product.id,
@@ -304,8 +334,8 @@ function VoicePOS() {
         price: i.product.price,
         qty: i.quantity,
       })),
-      p_is_parcel: isParcel,
-      p_is_jain: isJain,
+      p_is_parcel: parcel,
+      p_is_jain: jain,
     });
     if (saveErr || !saved) {
       setStatus(`❌ Not saved: ${saveErr?.message ?? "unknown error"}`);
@@ -322,9 +352,10 @@ function VoicePOS() {
       hour12: true,
     });
 
+    // Telegram: only mention P / J when selected — otherwise plain order
     const flags: string[] = [];
-    if (isParcel) flags.push("P");
-    if (isJain) flags.push("J");
+    if (parcel) flags.push("P");
+    if (jain) flags.push("J");
     const flagStr = flags.length ? ` [${flags.join("")}]` : "";
 
     const itemsText = order
@@ -334,15 +365,14 @@ function VoicePOS() {
       )
       .join("\n");
 
-    const message = `
-🆕 <b>નવો ઓર્ડર #${newOrderNumber}${flagStr}</b>
-⏰ સમય: ${timeStr}
-${isParcel ? "📦 પાર્સલ (P)\n" : ""}${isJain ? "🥗 જૈન (J)\n" : ""}
-${itemsText}
-
-💰 <b>કુલ: ₹${total}</b>
-📌 સ્થિતિ: નવો
-`.trim();
+    const lines = [
+      `🆕 <b>નવો ઓર્ડર #${newOrderNumber}${flagStr}</b>`,
+      `⏰ સમય: ${timeStr}`,
+    ];
+    if (parcel) lines.push("📦 પાર્સલ (P)");
+    if (jain) lines.push("🥗 જૈન (J)");
+    lines.push("", itemsText, "", `💰 <b>કુલ: ₹${total}</b>`, "📌 સ્થિતિ: નવો");
+    const message = lines.join("\n");
 
     try {
       const res = await fetch("/api/send-telegram", {
@@ -606,7 +636,7 @@ ${itemsText}
                   : "bg-white text-slate-600 border-orange-200 hover:bg-orange-50"
               }`}
             >
-              📦 P · Parcel
+              {isParcel ? "📦 P ✓ Parcel" : "P"}
             </button>
             <button
               type="button"
@@ -617,7 +647,7 @@ ${itemsText}
                   : "bg-white text-slate-600 border-orange-200 hover:bg-orange-50"
               }`}
             >
-              🥗 J · Jain
+              {isJain ? "🥗 J ✓ Jain" : "J"}
             </button>
           </div>
 

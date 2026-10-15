@@ -7,9 +7,13 @@ import NavLinks from "@/components/NavLinks";
 import {
   Product,
   loadProducts,
-  saveProducts,
+  fetchShopProducts,
+  upsertShopProduct,
+  deleteShopProduct,
+  saveShopProducts,
   makeProductId,
   makeKeywords,
+  DEFAULT_PRODUCTS,
 } from "@/lib/products";
 
 export default function MenuPage() {
@@ -22,14 +26,13 @@ export default function MenuPage() {
 
 function MenuManager() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     nameEn: "",
     nameGu: "",
     price: "",
     keywords: "",
   });
-  // Inline edit state per product
   const [inlineEdit, setInlineEdit] = useState<{
     id: string;
     nameEn: string;
@@ -38,22 +41,36 @@ function MenuManager() {
     keywords: string;
   } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const reload = async () => {
+    setLoading(true);
+    try {
+      const list = await fetchShopProducts();
+      setProducts(list);
+    } catch (e: any) {
+      setProducts(loadProducts());
+      showMsg(e?.message || "Could not load menu from server (showing cache)");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     setProducts(loadProducts());
+    reload();
   }, []);
 
   const showMsg = (text: string) => {
     setMessage(text);
-    setTimeout(() => setMessage(null), 2500);
+    setTimeout(() => setMessage(null), 3000);
   };
 
   const resetForm = () => {
     setForm({ nameEn: "", nameGu: "", price: "", keywords: "" });
-    setEditingId(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const nameEn = form.nameEn.trim();
     const nameGu = form.nameGu.trim();
     const price = parseFloat(form.price);
@@ -65,43 +82,26 @@ function MenuManager() {
 
     let keywords: string[];
     if (form.keywords.trim()) {
-      keywords = form.keywords
-        .split(",")
-        .map((k) => k.trim())
-        .filter(Boolean);
+      keywords = form.keywords.split(",").map((k) => k.trim()).filter(Boolean);
     } else {
       keywords = makeKeywords(nameEn, nameGu);
     }
 
-    let updated: Product[];
+    const id = makeProductId(nameEn);
+    const finalId = products.some((p) => p.id === id) ? `${id}-${Date.now()}` : id;
+    const newProduct: Product = { id: finalId, nameEn, nameGu, price, keywords };
 
-    if (editingId) {
-      updated = products.map((p) =>
-        p.id === editingId
-          ? { ...p, nameEn, nameGu, price, keywords }
-          : p
-      );
-      showMsg("Product updated");
-    } else {
-      const id = makeProductId(nameEn);
-      const finalId = products.some((p) => p.id === id)
-        ? `${id}-${Date.now()}`
-        : id;
-
-      const newProduct: Product = {
-        id: finalId,
-        nameEn,
-        nameGu,
-        price,
-        keywords,
-      };
-      updated = [...products, newProduct];
-      showMsg("Product added");
+    setBusy(true);
+    try {
+      await upsertShopProduct(newProduct);
+      setProducts((prev) => [...prev, newProduct]);
+      showMsg("Product added (saved to shop menu)");
+      resetForm();
+    } catch (e: any) {
+      showMsg(`❌ ${e.message || "Save failed"}`);
+    } finally {
+      setBusy(false);
     }
-
-    setProducts(updated);
-    saveProducts(updated);
-    resetForm();
   };
 
   const startInlineEdit = (product: Product) => {
@@ -116,7 +116,7 @@ function MenuManager() {
 
   const cancelInlineEdit = () => setInlineEdit(null);
 
-  const saveInlineEdit = () => {
+  const saveInlineEdit = async () => {
     if (!inlineEdit) return;
     const nameEn = inlineEdit.nameEn.trim();
     const nameGu = inlineEdit.nameGu.trim();
@@ -131,33 +131,55 @@ function MenuManager() {
     } else {
       keywords = makeKeywords(nameEn, nameGu);
     }
-    const updated = products.map((p) =>
-      p.id === inlineEdit.id ? { ...p, nameEn, nameGu, price, keywords } : p
-    );
-    setProducts(updated);
-    saveProducts(updated);
-    setInlineEdit(null);
-    showMsg("Saved");
+    const updated: Product = {
+      id: inlineEdit.id,
+      nameEn,
+      nameGu,
+      price,
+      keywords,
+    };
+    setBusy(true);
+    try {
+      await upsertShopProduct(updated);
+      setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      setInlineEdit(null);
+      showMsg("Saved to shop menu");
+    } catch (e: any) {
+      showMsg(`❌ ${e.message || "Save failed"}`);
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    if (!confirm("Delete this product?")) return;
-    const updated = products.filter((p) => p.id !== id);
-    setProducts(updated);
-    saveProducts(updated);
-    showMsg("Product deleted");
-    if (inlineEdit?.id === id) setInlineEdit(null);
-    if (editingId === id) resetForm();
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this product from shop menu?")) return;
+    setBusy(true);
+    try {
+      await deleteShopProduct(id);
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      showMsg("Product deleted");
+      if (inlineEdit?.id === id) setInlineEdit(null);
+    } catch (e: any) {
+      showMsg(`❌ ${e.message || "Delete failed"}`);
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const handleResetDefaults = () => {
-    if (!confirm("Reset to default menu? Your custom items will be removed.")) return;
-    localStorage.removeItem("pos-voice-products");
-    const defaults = loadProducts();
-    setProducts(defaults);
-    showMsg("Reset to default menu");
-    resetForm();
-    setInlineEdit(null);
+  const handleResetDefaults = async () => {
+    if (!confirm("Reset shop menu to default items? Custom items will be removed for this shop.")) return;
+    setBusy(true);
+    try {
+      await saveShopProducts(DEFAULT_PRODUCTS);
+      setProducts(DEFAULT_PRODUCTS);
+      showMsg("Reset to default menu (saved for this shop)");
+      resetForm();
+      setInlineEdit(null);
+    } catch (e: any) {
+      showMsg(`❌ ${e.message || "Reset failed"}`);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -165,7 +187,7 @@ function MenuManager() {
       <header className="bg-orange-500 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-md">
         <div>
           <h1 className="text-xl font-bold">Menu Manager</h1>
-          <p className="text-xs text-orange-100">Add / Edit products</p>
+          <p className="text-xs text-orange-100">Shop menu · shared with all staff</p>
         </div>
         <div className="flex items-center gap-2">
           <NavLinks />
@@ -190,8 +212,10 @@ function MenuManager() {
             {message}
           </div>
         )}
+        {loading && (
+          <p className="text-sm text-slate-400 text-center">Loading shop menu…</p>
+        )}
 
-        {/* Add new product form (top) */}
         <section className="bg-white rounded-2xl p-5 border border-orange-200 space-y-4 shadow-sm">
           <h2 className="font-semibold text-lg text-slate-800">Add New Product</h2>
 
@@ -242,34 +266,34 @@ function MenuManager() {
 
           <button
             onClick={handleSave}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-lg font-medium text-sm"
+            disabled={busy}
+            className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white px-5 py-2.5 rounded-lg font-medium text-sm"
           >
-            Add Product
+            {busy ? "Saving…" : "Add Product"}
           </button>
         </section>
 
-        {/* Product List – line-wise inline edit */}
         <section className="bg-white rounded-2xl border border-orange-200 overflow-hidden shadow-sm">
           <div className="px-5 py-3 border-b border-orange-100 flex items-center justify-between bg-orange-50">
             <h2 className="font-semibold text-slate-800">
-              Current Menu ({products.length} items)
+              Shop Menu ({products.length} items)
             </h2>
             <button
               onClick={handleResetDefaults}
+              disabled={busy}
               className="text-xs text-red-500 hover:text-red-600"
             >
               Reset to Defaults
             </button>
           </div>
 
-          {products.length === 0 ? (
+          {products.length === 0 && !loading ? (
             <p className="p-6 text-slate-400 text-center">No products yet</p>
           ) : (
             <ul className="divide-y divide-orange-100">
               {products.map((p) => (
                 <li key={p.id} className="px-4 py-3">
                   {inlineEdit?.id === p.id ? (
-                    /* Inline edit row – save right here, no scroll to top */
                     <div className="space-y-2">
                       <div className="grid grid-cols-2 gap-2">
                         <input
@@ -301,6 +325,7 @@ function MenuManager() {
                       <div className="flex gap-2">
                         <button
                           onClick={saveInlineEdit}
+                          disabled={busy}
                           className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-4 py-1.5 rounded-lg"
                         >
                           Save

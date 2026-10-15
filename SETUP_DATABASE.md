@@ -88,3 +88,28 @@ Set env vars:
 ### New UI routes
 - `/orders/edit` – pick today’s order and change items / P / J
 - Menu → Edit Order
+
+---
+
+## Migration: Shop-based menu
+
+Run in Supabase → SQL Editor:
+
+`supabase/migration_shop_menu.sql`
+
+Creates `menu_products` table scoped by `shop_id` (same pattern as orders).
+
+### Behaviour
+- Each shop has its own menu
+- All staff of that shop share the same menu on every device
+- First load with empty menu seeds the built-in defaults once for that shop
+- Local cache still used for fast startup; DB is source of truth
+
+### Functions
+- `list_menu_products()`
+- `upsert_menu_product(...)`
+- `delete_menu_product(code)`
+- `replace_menu_products(jsonb)` – full replace (import / reset)
+
+Also still run (if not already):
+- `migration_parcel_jain_edit.sql`

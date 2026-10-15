@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import PageShell, { card, btn, btn2, input } from "@/components/PageShell";
-import { loadProducts, saveProducts, makeProductId, makeKeywords, Product } from "@/lib/products";
+import { loadProducts, saveShopProducts, makeProductId, makeKeywords, Product } from "@/lib/products";
 
 interface Row { nameEn: string; nameGu: string; price: number; use: boolean; check?: string }
 
@@ -131,7 +131,7 @@ function Body() {
 
   const edit = (i: number, patch: Partial<Row>) => setRows(rows.map((r, k) => (k === i ? { ...r, ...patch } : r)));
 
-  const save = () => {
+  const save = async () => {
     const picked = rows.filter((x) => x.use && x.nameEn.trim());
     const toProduct = (r: Row): Product => {
       const nameEn = r.nameEn.trim();
@@ -139,25 +139,34 @@ function Body() {
       return { id: makeProductId(nameEn), nameEn, nameGu, keywords: makeKeywords(nameEn, nameGu), price: r.price };
     };
 
-    if (mode === "replace") {
-      if (!confirm(`This DELETES all ${loadProducts().length} old menu items and saves these ${picked.length} new ones. Continue?`)) return;
-      const seen = new Set<string>();
-      const fresh = picked.map(toProduct).filter((p) => !seen.has(p.id) && seen.add(p.id));
-      saveProducts(fresh);
-      setMsg(`✅ Old menu removed. ${fresh.length} new items saved.`);
-    } else {
-      const list: Product[] = [...loadProducts()];
-      let added = 0, updated = 0;
-      for (const r of picked) {
-        const p = toProduct(r);
-        const hit = list.findIndex((x) => x.id === p.id || x.nameEn.toLowerCase() === p.nameEn.toLowerCase());
-        if (hit >= 0) { if (list[hit].price !== p.price) { list[hit] = { ...list[hit], price: p.price }; updated++; } }
-        else { list.push(p); added++; }
+    setBusy(true);
+    try {
+      if (mode === "replace") {
+        if (!confirm(`This DELETES all ${loadProducts().length} old menu items for THIS SHOP and saves these ${picked.length} new ones. Continue?`)) {
+          setBusy(false);
+          return;
+        }
+        const seen = new Set<string>();
+        const fresh = picked.map(toProduct).filter((p) => !seen.has(p.id) && seen.add(p.id));
+        await saveShopProducts(fresh);
+        setMsg(`✅ Shop menu replaced. ${fresh.length} items saved (all staff devices will see this).`);
+      } else {
+        const list: Product[] = [...loadProducts()];
+        let added = 0, updated = 0;
+        for (const r of picked) {
+          const p = toProduct(r);
+          const hit = list.findIndex((x) => x.id === p.id || x.nameEn.toLowerCase() === p.nameEn.toLowerCase());
+          if (hit >= 0) { if (list[hit].price !== p.price) { list[hit] = { ...list[hit], price: p.price }; updated++; } }
+          else { list.push(p); added++; }
+        }
+        await saveShopProducts(list);
+        setMsg(`✅ ${added} item(s) added, ${updated} price(s) updated for this shop.`);
       }
-      saveProducts(list);
-      setMsg(`✅ ${added} item(s) added, ${updated} price(s) updated.`);
+      setRows([]); setPreview("");
+    } catch (e: any) {
+      setMsg("❌ " + (e?.message || "Could not save to shop menu"));
     }
-    setRows([]); setPreview("");
+    setBusy(false);
   };
 
   const chosen = rows.filter((r) => r.use && r.nameEn.trim()).length;
