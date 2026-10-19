@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { buildShiftSummaryMessage } from "@/lib/shiftSummary";
 
 /**
- * Daily midnight summary → Telegram.
- * Vercel cron: 0 18 * * *  (18:00 UTC = 00:00 IST next day)
- * Secured by CRON_SECRET header.
+ * End-of-shift summary → Telegram (profit, expenses, stock).
+ * Shop hours 2 PM → 9 AM IST. Cron: 0 4 * * * UTC ≈ 9:30 AM IST.
  */
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -29,8 +29,6 @@ export async function GET(req: NextRequest) {
 
   const supabase = createClient(supabaseUrl, serviceKey);
 
-  // Shop hours 2 PM → 9 AM. Run cron ~9:30 AM IST.
-  // At that time today_business_ist() is the night that just closed.
   let dayStr: string;
   const { data: bizDay, error: dayErr } = await supabase.rpc("today_business_ist");
   if (dayErr || !bizDay) {
@@ -41,7 +39,6 @@ export async function GET(req: NextRequest) {
     dayStr = String(bizDay);
   }
 
-  // Get all active shops
   const { data: shops, error: shopsErr } = await supabase
     .from("shops")
     .select("id, name")
@@ -76,24 +73,24 @@ export async function GET(req: NextRequest) {
       profit: number;
     };
 
-    const message = `
-══════════════════
-📊 <b>દૈનિક સારાંશ</b>
-<b>${s.day}</b>
-══════════════════
-🏪 <b>${s.shop_name || shop.name}</b>
+    // Stock sheet for this shop (service role — query tables directly)
+    const stock = await loadStockForShop(supabase, shop.id, dayStr);
 
-🧾 ઓર્ડર: <b>${s.orders}</b>
-💰 કુલ વેચાણ: <b>₹${Number(s.sales).toLocaleString("en-IN")}</b>
-  💵 Cash: <b>₹${Number(s.cash).toLocaleString("en-IN")}</b>
-  📱 UPI: <b>₹${Number(s.upi).toLocaleString("en-IN")}</b>
-  ⏳ Unpaid: <b>₹${Number(s.unpaid).toLocaleString("en-IN")}</b>
-
-📉 ખર્ચ: <b>₹${Number(s.expenses).toLocaleString("en-IN")}</b>
-──────────────────
-✅ <b>નફો: ₹${Number(s.profit).toLocaleString("en-IN")}</b>
-──────────────────
-`.trim();
+    const message = buildShiftSummaryMessage(
+      {
+        day: s.day || dayStr,
+        shopName: s.shop_name || shop.name,
+        orders: Number(s.orders) || 0,
+        sales: Number(s.sales) || 0,
+        cash: Number(s.cash) || 0,
+        upi: Number(s.upi) || 0,
+        unpaid: Number(s.unpaid) || 0,
+        expenses: Number(s.expenses) || 0,
+        profit: Number(s.profit) || 0,
+      },
+      stock,
+      { title: "SHIFT END SUMMARY" }
+    );
 
     try {
       const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -117,4 +114,61 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({ day: dayStr, results });
+}
+
+async function loadStockForShop(
+  supabase: ReturnType<typeof createClient>,
+  shopId: string,
+  day: string
+) {
+  const { data: items } = await supabase
+    .from("inventory_items")
+    .select("id, name, unit")
+    .eq("shop_id", shopId)
+    .eq("active", true);
+
+  if (!items?.length) return [];
+
+  const lines = [];
+  for (const item of items) {
+    const { data: prevClose } = await supabase
+      .from("stock_counts")
+      .select("closing_qty")
+      .eq("item_id", item.id)
+      .lt("count_date", day)
+      .order("count_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const { data: ins } = await supabase
+      .from("stock_in")
+      .select("qty")
+      .eq("item_id", item.id)
+      .eq("entry_date", day);
+
+    const { data: todayClose } = await supabase
+      .from("stock_counts")
+      .select("closing_qty")
+      .eq("item_id", item.id)
+      .eq("count_date", day)
+      .maybeSingle();
+
+    const opening = Number(prevClose?.closing_qty ?? 0);
+    const stock_in = (ins ?? []).reduce((s, r) => s + Number(r.qty || 0), 0);
+    const closing =
+      todayClose?.closing_qty === null || todayClose?.closing_qty === undefined
+        ? null
+        : Number(todayClose.closing_qty);
+    const used = closing === null ? null : opening + stock_in - closing;
+
+    lines.push({
+      name: item.name,
+      unit: item.unit,
+      opening,
+      stock_in,
+      closing,
+      used,
+    });
+  }
+  return lines;
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import PageShell, { card, input, btn, Table } from "@/components/PageShell";
 import { supabase, todayIST, addDays, inr } from "@/lib/supabase";
+import { buildShiftSummaryMessage } from "@/lib/shiftSummary";
 
 interface Day { day: string; orders: number; items: number; sales: number; cash: number; upi: number; unpaid: number; expenses: number; profit: number }
 interface Exp { id: string; category: string; note: string | null; amount: number; source: string; spread_days: number }
@@ -28,6 +29,7 @@ function Body() {
   const [amt, setAmt] = useState("");
   const [spread, setSpread] = useState("1");
   const [busy, setBusy] = useState(false);
+  const [shiftMsg, setShiftMsg] = useState("");
 
   const load = useCallback(async () => {
     const [{ data: r }, { data: w }, { data: e }, { data: c }] = await Promise.all([
@@ -76,11 +78,65 @@ function Body() {
   const profit = sales - expense;
   const collected = (d?.cash ?? 0) + (d?.upi ?? 0);
 
+
+  const sendShiftSummary = async () => {
+    setShiftMsg("Sending…");
+    setBusy(true);
+    try {
+      const [{ data: sheet }, { data: access }] = await Promise.all([
+        supabase.rpc("stock_sheet", { p_date: date }),
+        supabase.rpc("my_access"),
+      ]);
+      const stock = ((sheet as any[]) ?? []).map((r) => ({
+        name: r.name,
+        unit: r.unit,
+        opening: Number(r.opening) || 0,
+        stock_in: Number(r.stock_in) || 0,
+        closing: r.closing === null || r.closing === undefined ? null : Number(r.closing),
+        used: r.used === null || r.used === undefined ? null : Number(r.used),
+      }));
+      const message = buildShiftSummaryMessage(
+        {
+          day: date,
+          shopName: (access as any)?.shop_name,
+          orders: d?.orders ?? 0,
+          sales: d?.sales ?? 0,
+          cash: d?.cash ?? 0,
+          upi: d?.upi ?? 0,
+          unpaid: d?.unpaid ?? 0,
+          expenses: d?.expenses ?? 0,
+          profit: (d?.sales ?? 0) - (d?.expenses ?? 0),
+        },
+        stock,
+        { title: "SHIFT END SUMMARY" }
+      );
+      const res = await fetch("/api/send-telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderText: message, orderNumber: 0 }),
+      });
+      const data = await res.json();
+      setShiftMsg(data.success ? "✅ Sent to Telegram" : `❌ ${data.error || "Failed"}`);
+    } catch (e: any) {
+      setShiftMsg(`❌ ${e.message || "Failed"}`);
+    }
+    setBusy(false);
+  };
+
   return (
     <>
       <a href="/expenses" className="block text-center bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl py-3">
         Open Expenses (add / edit costs)
       </a>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={sendShiftSummary}
+        className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-slate-200 text-white font-semibold rounded-xl py-3"
+      >
+        🏁 Send shift summary to Telegram
+      </button>
+      {shiftMsg && <p className="text-sm text-center text-slate-600">{shiftMsg}</p>}
       <input type="date" className={input + " !w-auto"} value={date} max={todayIST()} onChange={(e) => setDate(e.target.value)} />
 
       <div className={`${card} space-y-2`}>
