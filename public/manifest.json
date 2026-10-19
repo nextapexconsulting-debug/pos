@@ -1,24 +1,39 @@
 {
-  "name": "Voice POS - Order Booking",
+  "name": "Krishna Voice POS",
   "short_name": "Voice POS",
-  "description": "Gujarati Voice Order Booking System",
-  "start_url": "/",
+  "description": "Order booking POS – voice & tap. Krishna Sandwich Pizza.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#f97316",
+  "categories": ["business", "productivity"],
+  "lang": "gu",
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
