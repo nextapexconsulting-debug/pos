@@ -31,7 +31,7 @@ function VoicePOS() {
   const [error, setError] = useState<string | null>(null);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
-  const [lastOrder, setLastOrder] = useState<{ id: string; no: number; total: number; paid?: string } | null>(null);
+  const [lastOrder, setLastOrder] = useState<{ id: string; no: number; total: number; paid?: string; items: { name: string; qty: number; price: number }[]; parcel?: boolean; jain?: boolean } | null>(null);
   const [isSupported, setIsSupported] = useState(false);
   const [priceTab, setPriceTab] = useState<string>("all");
   const [isParcel, setIsParcel] = useState(false);
@@ -349,7 +349,14 @@ function VoicePOS() {
       return;
     }
     const newOrderNumber: number = saved.order_no;
-    setLastOrder({ id: saved.order_id, no: newOrderNumber, total: saved.total });
+    setLastOrder({
+      id: saved.order_id,
+      no: newOrderNumber,
+      total: saved.total,
+      items: order.map((i) => ({ name: i.product.nameEn, qty: i.quantity, price: i.product.price })),
+      parcel: parcelOn,
+      jain: jainOn,
+    });
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString("gu-IN", {
@@ -492,7 +499,7 @@ function VoicePOS() {
         {/* Left: Voice + Products */}
         <section className="flex-1 p-3 flex flex-col gap-3 min-h-0 overflow-hidden">
           {lastOrder && (
-            <div className="bg-orange-50 rounded-xl p-3 border border-orange-200 flex items-center gap-2 shrink-0">
+            <div className="bg-orange-50 rounded-xl p-3 border border-orange-200 flex items-center gap-2 shrink-0 flex-wrap">
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-slate-800">Order #{lastOrder.no} · ₹{lastOrder.total}</div>
                 <div className="text-xs text-slate-500">
@@ -501,11 +508,26 @@ function VoicePOS() {
               </div>
               {!lastOrder.paid && (
                 <>
-                  <button onClick={() => markPaid("cash")} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">💵 Cash</button>
-                  <button onClick={() => markPaid("upi")} className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-3 py-2 rounded-lg">📱 UPI</button>
+                  <button type="button" onClick={() => markPaid("cash")} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">💵 Cash</button>
+                  <button type="button" onClick={() => markPaid("upi")} className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-3 py-2 rounded-lg">📱 UPI</button>
                 </>
               )}
-              <button onClick={() => setLastOrder(null)} className="text-slate-400 hover:text-slate-600 px-1">✕</button>
+              <button
+                type="button"
+                onClick={() =>
+                  printOrderReceipt({
+                    orderNo: lastOrder.no,
+                    items: lastOrder.items,
+                    total: lastOrder.total,
+                    parcel: lastOrder.parcel,
+                    jain: lastOrder.jain,
+                  })
+                }
+                className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-3 py-2 rounded-lg"
+              >
+                🖨 Print
+              </button>
+              <button type="button" onClick={() => setLastOrder(null)} className="text-slate-400 hover:text-slate-600 px-1">✕</button>
             </div>
           )}
 

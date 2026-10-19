@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import PageShell, { card, input, btn2 } from "@/components/PageShell";
 import { useAccess } from "@/components/AuthGate";
 import { supabase, todayIST, inr } from "@/lib/supabase";
+import { printOrderReceipt } from "@/lib/printer";
 import Link from "next/link";
 
 interface Item { name_en: string; qty: number; price: number; line_total: number }
@@ -108,8 +109,33 @@ function Orders() {
                 <button className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg" onClick={() => act("set_payment", { p_order: o.id, p_method: "upi" })}>📱 Paid UPI</button>
               </>
             )}
+            <button
+              type="button"
+              className="text-xs bg-orange-500 hover:bg-orange-600 text-white font-semibold px-3 py-1.5 rounded-lg ml-auto"
+              onClick={() =>
+                printOrderReceipt({
+                  orderNo: o.order_no,
+                  items: o.order_items.map((i) => ({
+                    name: i.name_en,
+                    qty: i.qty,
+                    price: i.price,
+                  })),
+                  total: Number(o.total),
+                  parcel: o.is_parcel === true,
+                  jain: o.is_jain === true,
+                })
+              }
+            >
+              🖨 Print
+            </button>
             {owner && o.status === "active" && (
-              <button className="text-xs text-red-500 ml-auto" onClick={() => confirm(`Cancel order #${o.order_no}?`) && act("cancel_order", { p_order: o.id })}>Cancel order</button>
+              <button
+                type="button"
+                className="text-xs text-red-500"
+                onClick={() => confirm(`Cancel order #${o.order_no}?`) && act("cancel_order", { p_order: o.id })}
+              >
+                Cancel
+              </button>
             )}
           </div>
         </div>
