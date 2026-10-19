@@ -5,30 +5,32 @@ import { usePathname } from "next/navigation";
 import { useAccess, logout } from "./AuthGate";
 import { useRef, useEffect } from "react";
 
+type NavLink = { href: string; label: string };
+
 export default function NavLinks() {
   const a = useAccess();
   const owner = a.role === "owner";
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const pathname = usePathname();
 
-  const links: [string, string][] =
+  const links: NavLink[] =
     a.role === "super_admin"
-      ? [["/admin", "Admin"]]
+      ? [{ href: "/admin", label: "Admin" }]
       : [
-          ["/orders", "Orders"],
-          ["/orders/edit", "Edit Order"],
+          { href: "/orders", label: "Orders" },
+          { href: "/orders/edit", label: "Edit Order" },
           ...(owner
-            ? ([
-                ["/dashboard", "Today / Profit"],
-                ["/expenses", "Expenses"],
-                ["/stock", "Stock"],
-                ["/reports", "Reports"],
-                ["/menu", "Add / Edit Product"],
-                ["/printer", "Printer"],
-                ["/staff", "Staff"],
-                ["/billing", "Billing"],
-              ] as [string, string][])
-            : [["/menu", "Add / Edit Product"]]),
+            ? [
+                { href: "/dashboard", label: "Today / Profit" },
+                { href: "/expenses", label: "Expenses" },
+                { href: "/stock", label: "Stock" },
+                { href: "/reports", label: "Reports" },
+                { href: "/menu", label: "Add / Edit Product" },
+                { href: "/printer", label: "Printer" },
+                { href: "/staff", label: "Staff" },
+                { href: "/billing", label: "Billing" },
+              ]
+            : [{ href: "/menu", label: "Add / Edit Product" }]),
         ];
 
   useEffect(() => {
@@ -64,7 +66,7 @@ export default function NavLinks() {
           ☰ Menu
         </summary>
         <div className="absolute right-0 mt-2 w-52 bg-white border border-orange-200 rounded-xl shadow-xl z-30 overflow-hidden text-slate-800">
-          {links.map(([href, label]) => (
+          {links.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
