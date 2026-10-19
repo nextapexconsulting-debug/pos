@@ -14,7 +14,7 @@ export type ShiftMoney = {
 
 export type ShiftStockLine = {
   name: string;
-  unit?: string;
+  unit?: string | null;
   opening: number;
   stock_in: number;
   closing: number | null;
