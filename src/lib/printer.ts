@@ -43,8 +43,10 @@ function escapeHtml(s: string) {
 }
 
 /**
- * Print on the SAME page (no new tab / no extra history).
- * Mobile: dismiss print dialog → one Back stays in the app.
+ * Same-page print:
+ * - Only receipt content is printed (no blank pages from hidden UI)
+ * - Long orders flow to next page automatically
+ * - No extra browser history on mobile
  */
 export function printOrderReceipt(opts: {
   orderNo: number;
@@ -56,64 +58,114 @@ export function printOrderReceipt(opts: {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
   const cfg = loadPrinterCfg();
-  const width = cfg.paperWidth === "80" ? "300px" : "220px";
+  // Thermal widths ~58mm / 80mm at ~96dpi
+  const widthMm = cfg.paperWidth === "80" ? 72 : 48;
   const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""]
     .filter(Boolean)
     .join(" · ");
 
-  // Remove previous print root if any
   document.getElementById("pos-print-root")?.remove();
 
   const root = document.createElement("div");
   root.id = "pos-print-root";
   root.innerHTML = `
-    <style id="pos-print-style">
-      /* Screen: hide receipt completely */
+    <style>
+      /* On screen: park off-canvas, no layout impact */
       #pos-print-root {
-        position: fixed;
-        left: -9999px;
+        position: absolute;
+        left: -10000px;
         top: 0;
-        width: ${width};
-        pointer-events: none;
+        width: ${widthMm}mm;
       }
+      #pos-print-root .sheet {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.35;
+        color: #000;
+        width: ${widthMm}mm;
+      }
+      #pos-print-root .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+        margin: 2px 0;
+        page-break-inside: avoid;
+      }
+      #pos-print-root .sep {
+        border-top: 1px dashed #000;
+        margin: 6px 0;
+      }
+      #pos-print-root .head {
+        text-align: center;
+        font-weight: 700;
+        font-size: 13px;
+        margin-bottom: 4px;
+      }
+      #pos-print-root .total {
+        font-size: 14px;
+        font-weight: 700;
+        text-align: right;
+      }
+
+      @page {
+        margin: 4mm;
+        size: auto;
+      }
+
       @media print {
-        /* Print only the receipt — hide the app UI */
-        body * { visibility: hidden !important; }
-        #pos-print-root, #pos-print-root * { visibility: visible !important; }
+        /* Hide entire app — display:none so it takes NO space (avoids blank pages) */
+        html, body {
+          height: auto !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #fff !important;
+        }
+        body > *:not(#pos-print-root) {
+          display: none !important;
+        }
         #pos-print-root {
-          position: absolute !important;
-          left: 0 !important;
-          top: 0 !important;
+          display: block !important;
+          position: static !important;
+          left: auto !important;
+          top: auto !important;
           width: 100% !important;
-          pointer-events: auto !important;
+          margin: 0 !important;
+          padding: 0 !important;
         }
         #pos-print-root .sheet {
-          width: ${width};
+          width: ${widthMm}mm;
           max-width: 100%;
           margin: 0 auto;
-          font-family: ui-monospace, Menlo, monospace;
-          font-size: 13px;
-          color: #000;
+        }
+        /* Allow natural page breaks for long orders; keep each line together */
+        #pos-print-root .row {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+        #pos-print-root .head,
+        #pos-print-root .total {
+          page-break-inside: avoid;
+          break-inside: avoid;
         }
       }
     </style>
     <div class="sheet">
-      <div style="text-align:center;font-weight:700;font-size:15px;margin-bottom:6px">${escapeHtml(cfg.shopHeader)}</div>
-      <div style="border-top:1px dashed #000;margin:8px 0"></div>
+      <div class="head">${escapeHtml(cfg.shopHeader)}</div>
+      <div class="sep"></div>
       <div><b>Order #${opts.orderNo}</b></div>
       <div>${new Date().toLocaleString("en-IN")}</div>
       ${flags ? `<div><b>${flags}</b></div>` : ""}
-      <div style="border-top:1px dashed #000;margin:8px 0"></div>
+      <div class="sep"></div>
       ${opts.items
         .map(
           (i) =>
-            `<div style="margin:4px 0;display:flex;justify-content:space-between;gap:8px"><span>${i.qty}× ${escapeHtml(i.name)}</span><span>₹${i.price * i.qty}</span></div>`
+            `<div class="row"><span>${i.qty}× ${escapeHtml(i.name)}</span><span>₹${i.price * i.qty}</span></div>`
         )
         .join("")}
-      <div style="border-top:1px dashed #000;margin:8px 0"></div>
-      <div style="font-size:16px;font-weight:700;text-align:right">TOTAL  ₹${opts.total}</div>
-      <div style="border-top:1px dashed #000;margin:8px 0"></div>
-      <div style="text-align:center;margin-top:8px">Thank you</div>
+      <div class="sep"></div>
+      <div class="total">TOTAL  ₹${opts.total}</div>
+      <div class="sep"></div>
+      <div style="text-align:center">Thank you</div>
     </div>
   `;
   document.body.appendChild(root);
@@ -124,7 +176,6 @@ export function printOrderReceipt(opts: {
   };
   window.addEventListener("afterprint", cleanup);
 
-  // Defer so the DOM is ready (helps iOS/Android)
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       try {
@@ -134,7 +185,6 @@ export function printOrderReceipt(opts: {
         cleanup();
         alert("Could not open print. Try again.");
       }
-      // Safety cleanup if afterprint never fires (some Android WebViews)
       setTimeout(cleanup, 60_000);
     });
   });
