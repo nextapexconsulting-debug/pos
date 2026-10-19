@@ -137,7 +137,7 @@ async function loadStockForShop(
 
   const lines: {
     name: string;
-    unit: string | null;
+    unit?: string;
     opening: number;
     stock_in: number;
     closing: number | null;
@@ -181,7 +181,7 @@ async function loadStockForShop(
 
     lines.push({
       name: item.name,
-      unit: item.unit,
+      unit: item.unit ?? undefined,
       opening,
       stock_in,
       closing,
