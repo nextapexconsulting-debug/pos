@@ -60,7 +60,16 @@ export default function AuthGate({ children, roles }: { children: ReactNode; rol
     }
   }, [access, roles, router]);
 
-  if (!access) return <Screen><p className="text-slate-400">Loading…</p></Screen>;
+  if (!access) return (
+    <Screen>
+      <div className="text-center px-6">
+        <div className="text-2xl sm:text-3xl font-bold text-orange-500 leading-snug">
+          Let&apos;s Do Some Business
+        </div>
+        <p className="text-slate-400 text-sm mt-3">Loading…</p>
+      </div>
+    </Screen>
+  );
 
   if (!access.ok) {
     const t = {

@@ -123,6 +123,7 @@ function Orders() {
                   total: Number(o.total),
                   parcel: o.is_parcel === true,
                   jain: o.is_jain === true,
+                  orderedAt: o.created_at,
                 })
               }
             >

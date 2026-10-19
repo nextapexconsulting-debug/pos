@@ -42,6 +42,23 @@ function escapeHtml(s: string) {
     .replace(/"/g, "&quot;");
 }
 
+
+function formatOrderTime(orderedAt?: string | Date | null): string {
+  const d = orderedAt ? new Date(orderedAt) : new Date();
+  if (isNaN(d.getTime())) {
+    return new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+  }
+  return d.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 /**
  * Same-page print:
  * - Only receipt content is printed (no blank pages from hidden UI)
@@ -54,6 +71,8 @@ export function printOrderReceipt(opts: {
   total: number;
   parcel?: boolean;
   jain?: boolean;
+  /** When the order was placed (ISO string or Date). Defaults to now only if missing. */
+  orderedAt?: string | Date | null;
 }) {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
@@ -153,7 +172,7 @@ export function printOrderReceipt(opts: {
       <div class="head">${escapeHtml(cfg.shopHeader)}</div>
       <div class="sep"></div>
       <div><b>Order #${opts.orderNo}</b></div>
-      <div>${new Date().toLocaleString("en-IN")}</div>
+      <div>${formatOrderTime(opts.orderedAt)}</div>
       ${flags ? `<div><b>${flags}</b></div>` : ""}
       <div class="sep"></div>
       ${opts.items
