@@ -117,7 +117,8 @@ export async function GET(req: NextRequest) {
 }
 
 async function loadStockForShop(
-  supabase: ReturnType<typeof createClient>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
   shopId: string,
   day: string
 ) {
@@ -127,10 +128,23 @@ async function loadStockForShop(
     .eq("shop_id", shopId)
     .eq("active", true);
 
-  if (!items?.length) return [];
+  type ItemRow = { id: string; name: string; unit: string | null };
+  type QtyRow = { qty: number | null };
+  type CloseRow = { closing_qty: number | null };
 
-  const lines = [];
-  for (const item of items) {
+  const list = (items ?? []) as ItemRow[];
+  if (!list.length) return [];
+
+  const lines: {
+    name: string;
+    unit: string | null;
+    opening: number;
+    stock_in: number;
+    closing: number | null;
+    used: number | null;
+  }[] = [];
+
+  for (const item of list) {
     const { data: prevClose } = await supabase
       .from("stock_counts")
       .select("closing_qty")
@@ -153,12 +167,16 @@ async function loadStockForShop(
       .eq("count_date", day)
       .maybeSingle();
 
-    const opening = Number(prevClose?.closing_qty ?? 0);
-    const stock_in = (ins ?? []).reduce((s, r) => s + Number(r.qty || 0), 0);
+    const prev = prevClose as CloseRow | null;
+    const insRows = (ins ?? []) as QtyRow[];
+    const today = todayClose as CloseRow | null;
+
+    const opening = Number(prev?.closing_qty ?? 0);
+    const stock_in = insRows.reduce((s, r) => s + Number(r.qty || 0), 0);
     const closing =
-      todayClose?.closing_qty === null || todayClose?.closing_qty === undefined
+      today?.closing_qty === null || today?.closing_qty === undefined
         ? null
-        : Number(todayClose.closing_qty);
+        : Number(today.closing_qty);
     const used = closing === null ? null : opening + stock_in - closing;
 
     lines.push({
