@@ -20,8 +20,14 @@ const rpc = async (fn: string, f: string, t: string) => {
   return (data as Record<string, any>[]) ?? [];
 };
 
-const inr = (n: number) =>
-  "₹" + Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+/** jsPDF Helvetica has no ₹ — use digits only or a leading "1" appears. */
+const inr = (n: number) => {
+  const num = Math.round(Number(n) || 0);
+  const body = Math.abs(num)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return (num < 0 ? "-Rs " : "Rs ") + body;
+};
 
 const REPORTS: Rep[] = [
   {
