@@ -252,12 +252,13 @@ function Body() {
     );
   };
 
-  /** One-page summary PDF (print → Save as PDF). No long line lists. */
+  /** Real PDF file download — stays on this page (jsPDF). */
   const downloadSummaryPdf = async (f: string, e: string, label: string) => {
     setPdfBusy(true);
     setErr("");
     try {
-      const [daily, items, expenses, hourly] = await Promise.all([
+      const [{ default: jsPDF }, daily, items, expenses, hourly] = await Promise.all([
+        import("jspdf"),
         rpc("report_daily", f, e),
         rpc("report_items", f, e),
         rpc("report_expenses", f, e),
@@ -268,7 +269,7 @@ function Body() {
         arr.reduce((s, r) => s + Number(r[key] || 0), 0);
 
       const sales = sum(daily, "sales");
-      const exp = sum(daily, "expenses");
+      const expTotal = sum(daily, "expenses");
       const profit = sum(daily, "profit");
       const orders = sum(daily, "orders");
       const cash = sum(daily, "cash");
@@ -290,97 +291,179 @@ function Body() {
         .sort((a, b) => Number(b.sales || 0) - Number(a.sales || 0))
         .slice(0, 5);
 
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
-<title>Report ${label}</title>
-<style>
-  body{font-family:system-ui,sans-serif;color:#111;padding:24px;max-width:720px;margin:0 auto}
-  h1{font-size:20px;margin:0 0 4px}
-  .sub{color:#666;font-size:13px;margin-bottom:20px}
-  h2{font-size:14px;margin:20px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .box{border:1px solid #eee;border-radius:8px;padding:12px}
-  .box b{display:block;font-size:18px;margin-top:4px}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{text-align:left;padding:6px 4px;border-bottom:1px solid #f0f0f0}
-  th{color:#666;font-weight:600}
-  td.r,th.r{text-align:right}
-  .foot{margin-top:28px;font-size:11px;color:#999}
-  @media print{body{padding:12px}}
-</style></head><body>
-  <h1>Business summary</h1>
-  <div class="sub">${label} · ${f} → ${e} · Generated ${new Date().toLocaleString("en-IN")}</div>
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
+      const pageW = doc.internal.pageSize.getWidth();
+      let y = 16;
 
-  <div class="grid">
-    <div class="box">Orders<b>${orders.toLocaleString("en-IN")}</b></div>
-    <div class="box">Sales<b>${inr(sales)}</b></div>
-    <div class="box">Expenses<b>${inr(exp)}</b></div>
-    <div class="box">Profit<b>${inr(profit)}</b></div>
-    <div class="box">Cash collected<b>${inr(cash)}</b></div>
-    <div class="box">UPI collected<b>${inr(upi)}</b></div>
-    <div class="box">Still unpaid<b>${inr(unpaid)}</b></div>
-  </div>
+      const line = (txt: string, size = 11, style: "normal" | "bold" = "normal") => {
+        doc.setFont("helvetica", style);
+        doc.setFontSize(size);
+        doc.text(txt, 14, y);
+        y += size * 0.45 + 2;
+      };
 
-  <h2>Top items by revenue</h2>
-  <table><thead><tr><th>#</th><th>Item</th><th class="r">Qty</th><th class="r">Revenue</th></tr></thead>
-  <tbody>
-  ${
-    topItems.length
-      ? topItems
-          .map(
-            (r, i) =>
-              `<tr><td>${i + 1}</td><td>${esc(r.item)}</td><td class="r">${Number(r.qty || 0)}</td><td class="r">${inr(Number(r.revenue || 0))}</td></tr>`
-          )
-          .join("")
-      : `<tr><td colspan="4">No item data</td></tr>`
-  }
-  </tbody></table>
+      doc.setTextColor(15, 23, 42);
+      line("Business summary", 18, "bold");
+      doc.setTextColor(100, 100, 100);
+      line(`${label}  |  ${f} to ${e}`, 10);
+      line(`Generated ${new Date().toLocaleString("en-IN")}`, 9);
+      y += 2;
 
-  <h2>Expenses by category</h2>
-  <table><thead><tr><th>Category</th><th class="r">Total</th></tr></thead>
-  <tbody>
-  ${
-    topExp.length
-      ? topExp
-          .map(
-            (r) =>
-              `<tr><td>${esc(r.category)}</td><td class="r">${inr(Number(r.total || 0))}</td></tr>`
-          )
-          .join("")
-      : `<tr><td colspan="2">No expenses</td></tr>`
-  }
-  </tbody></table>
+      doc.setDrawColor(249, 115, 22);
+      doc.setLineWidth(0.4);
+      doc.line(14, y, pageW - 14, y);
+      y += 8;
 
-  <h2>Peak hours</h2>
-  <table><thead><tr><th>Hour</th><th class="r">Orders</th><th class="r">Sales</th></tr></thead>
-  <tbody>
-  ${
-    topHours.length
-      ? topHours
-          .map(
-            (r) =>
-              `<tr><td>${esc(String(r.hour))}:00</td><td class="r">${Number(r.orders || 0)}</td><td class="r">${inr(Number(r.sales || 0))}</td></tr>`
-          )
-          .join("")
-      : `<tr><td colspan="3">No data</td></tr>`
-  }
-  </tbody></table>
+      doc.setTextColor(15, 23, 42);
+      const metrics: [string, string][] = [
+        ["Orders", String(orders)],
+        ["Sales", inr(sales)],
+        ["Expenses", inr(expTotal)],
+        ["Profit", inr(profit)],
+        ["Cash", inr(cash)],
+        ["UPI", inr(upi)],
+        ["Unpaid", inr(unpaid)],
+      ];
 
-  <div class="foot">Summary only — not a GST tax invoice. Open Reports in app for full detail.</div>
-  <script>window.onload=function(){setTimeout(function(){window.print()},300)}</script>
-</body></html>`;
+      // 2-column metrics
+      const col2 = pageW / 2 + 2;
+      metrics.forEach(([labelM, val], i) => {
+        const x = i % 2 === 0 ? 14 : col2;
+        if (i % 2 === 0 && i > 0) y += 1;
+        const rowY = y + Math.floor(i / 2) * 12;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100);
+        doc.text(labelM, x, rowY);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(15, 23, 42);
+        doc.text(val, x, rowY + 5);
+      });
+      y += Math.ceil(metrics.length / 2) * 12 + 6;
 
-      // Same-page approach avoids extra history on mobile where possible
-      const w = window.open("", "_blank", "noopener,noreferrer");
-      if (!w) {
-        // Fallback: same-tab blob
-        const blob = new Blob([html], { type: "text/html" });
-        const url = URL.createObjectURL(blob);
-        window.location.href = url;
-        return;
+      doc.setDrawColor(230, 230, 230);
+      doc.line(14, y, pageW - 14, y);
+      y += 8;
+
+      // Top items
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Top items by revenue", 14, y);
+      y += 6;
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text("#", 14, y);
+      doc.text("Item", 22, y);
+      doc.text("Qty", 130, y, { align: "right" });
+      doc.text("Revenue", pageW - 14, y, { align: "right" });
+      y += 5;
+      doc.setDrawColor(240, 240, 240);
+      doc.line(14, y, pageW - 14, y);
+      y += 5;
+
+      if (!topItems.length) {
+        doc.setTextColor(150, 150, 150);
+        doc.text("No item data", 14, y);
+        y += 6;
+      } else {
+        topItems.forEach((r, i) => {
+          if (y > 270) {
+            doc.addPage();
+            y = 16;
+          }
+          doc.setTextColor(15, 23, 42);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          const name = String(r.item ?? "").slice(0, 42);
+          doc.text(String(i + 1), 14, y);
+          doc.text(name, 22, y);
+          doc.text(String(Number(r.qty || 0)), 130, y, { align: "right" });
+          doc.text(inr(Number(r.revenue || 0)), pageW - 14, y, { align: "right" });
+          y += 5.5;
+        });
       }
-      w.document.open();
-      w.document.write(html);
-      w.document.close();
+
+      y += 4;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Expenses by category", 14, y);
+      y += 6;
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text("Category", 14, y);
+      doc.text("Total", pageW - 14, y, { align: "right" });
+      y += 5;
+      doc.setDrawColor(240, 240, 240);
+      doc.line(14, y, pageW - 14, y);
+      y += 5;
+
+      if (!topExp.length) {
+        doc.setTextColor(150, 150, 150);
+        doc.text("No expenses", 14, y);
+        y += 6;
+      } else {
+        topExp.forEach((r) => {
+          if (y > 270) {
+            doc.addPage();
+            y = 16;
+          }
+          doc.setTextColor(15, 23, 42);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text(String(r.category ?? "").slice(0, 50), 14, y);
+          doc.text(inr(Number(r.total || 0)), pageW - 14, y, { align: "right" });
+          y += 5.5;
+        });
+      }
+
+      y += 4;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Peak hours", 14, y);
+      y += 6;
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text("Hour", 14, y);
+      doc.text("Orders", 80, y, { align: "right" });
+      doc.text("Sales", pageW - 14, y, { align: "right" });
+      y += 5;
+      doc.line(14, y, pageW - 14, y);
+      y += 5;
+
+      if (!topHours.length) {
+        doc.setTextColor(150, 150, 150);
+        doc.text("No data", 14, y);
+      } else {
+        topHours.forEach((r) => {
+          if (y > 275) {
+            doc.addPage();
+            y = 16;
+          }
+          doc.setTextColor(15, 23, 42);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text(`${String(r.hour)}:00`, 14, y);
+          doc.text(String(Number(r.orders || 0)), 80, y, { align: "right" });
+          doc.text(inr(Number(r.sales || 0)), pageW - 14, y, { align: "right" });
+          y += 5.5;
+        });
+      }
+
+      y = Math.max(y + 10, 280);
+      if (y > 285) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text("Summary only — not a GST tax invoice.", 14, 290);
+
+      const safeLabel = label.replace(/[^\w\-]+/g, "_").slice(0, 40);
+      doc.save(`report_${safeLabel}_${f}_${e}.pdf`);
     } catch (e: any) {
       setErr(e.message || "PDF failed");
     }
@@ -516,11 +599,4 @@ function Body() {
       </div>
     </>
   );
-}
-
-function esc(s: string) {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
