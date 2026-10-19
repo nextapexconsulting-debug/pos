@@ -1,10 +1,9 @@
 "use client";
 
 import { ReactNode } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AuthGate from "./AuthGate";
-import NavLinks from "./NavLinks";
+import AppHeader from "./AppHeader";
 
 export const card = "bg-white border border-orange-200 rounded-xl p-3 shadow-sm";
 export const input =
@@ -44,24 +43,8 @@ export default function PageShell({
   return (
     <AuthGate roles={roles}>
       <div className="min-h-screen bg-white text-slate-900">
-        <header className="bg-orange-500 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-20 shadow-md">
-          <div className="min-w-0">
-            <h1 className="text-lg font-bold truncate">{title}</h1>
-            <nav className="text-[11px] text-orange-100 flex items-center gap-1 truncate">
-              <Link href="/" className="hover:underline">
-                Home
-              </Link>
-              {pathname !== "/" && (
-                <>
-                  <span>/</span>
-                  <span className="text-white font-medium">{crumb}</span>
-                </>
-              )}
-            </nav>
-          </div>
-          <NavLinks />
-        </header>
-        <main className="max-w-5xl mx-auto p-3 space-y-3">{children}</main>
+        <AppHeader title={title} breadcrumb={pathname === "/" ? undefined : crumb} />
+        <main className="max-w-5xl mx-auto p-3 sm:p-4 space-y-3">{children}</main>
       </div>
     </AuthGate>
   );
@@ -87,8 +70,8 @@ export function Table({
   if (!rows.length)
     return <p className="text-slate-500 text-sm text-center py-6">No data for this period</p>;
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto -mx-1">
+      <table className="w-full text-sm min-w-[280px]">
         <thead>
           <tr className="text-slate-500 text-xs border-b border-orange-200">
             {cols.map((c) => (

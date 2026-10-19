@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Product, loadProducts, fetchShopProducts } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
 import AuthGate from "@/components/AuthGate";
-import NavLinks from "@/components/NavLinks";
+import AppHeader from "@/components/AppHeader";
 import { loadPrinterCfg, printOrderReceipt } from "@/lib/printer";
 import {
   OrderItem,
@@ -483,17 +483,7 @@ function VoicePOS() {
 
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col pb-36 md:pb-0">
-      <header className="bg-orange-500 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-20 shadow-md">
-        <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight">New Order</h1>
-          <nav className="text-[11px] text-orange-100 flex items-center gap-1">
-            <span className="text-white font-medium">Home</span>
-            <span>/</span>
-            <span>New Order</span>
-          </nav>
-        </div>
-        <NavLinks />
-      </header>
+      <AppHeader title="New Order" breadcrumb="New Order" />
 
       <main className="flex-1 flex flex-col md:flex-row max-w-6xl mx-auto w-full min-h-0">
         {/* Left: Voice + Products */}

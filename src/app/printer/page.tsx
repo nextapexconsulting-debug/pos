@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import PageShell, { card, input, btn, btn2 } from "@/components/PageShell";
 
-import { loadPrinterCfg, savePrinterCfg, defaultPrinterCfg, type PrinterCfg, type Conn } from "@/lib/printer";
+import { loadPrinterCfg, savePrinterCfg, defaultPrinterCfg, printOrderReceipt, type PrinterCfg, type Conn } from "@/lib/printer";
 type Cfg = PrinterCfg;
 const defaults = defaultPrinterCfg;
 const KEY = "pos-printer-cfg";
@@ -36,47 +36,12 @@ function Body() {
   };
 
   const testPrint = async () => {
-    const text = [
-      cfg.shopHeader,
-      "----------------",
-      "TEST PRINT",
-      new Date().toLocaleString("en-IN"),
-      "----------------",
-      "Voice POS OK",
-      "\n\n\n",
-    ].join("\n");
-
-    if (cfg.connection === "system" || cfg.connection === "none") {
-      // Browser print dialog – works with any OS printer (USB/network driver)
-      const w = window.open("", "_blank", "width=320,height=480");
-      if (!w) return alert("Allow pop-ups to test print");
-      w.document.write(`<pre style="font-family:monospace;font-size:12px;padding:8px">${text.replace(/</g, "&lt;")}</pre>`);
-      w.document.close();
-      w.focus();
-      w.print();
-      return;
-    }
-
-    if (cfg.connection === "network") {
-      setMsg("Network raw TCP print needs a small bridge app on the same Wi‑Fi (port 9100). Use System print until then.");
-      return;
-    }
-
-    if (cfg.connection === "bluetooth") {
-      if (!(navigator as any).bluetooth) {
-        alert("Web Bluetooth not supported in this browser. Use Chrome on Android, or System print.");
-        return;
-      }
-      try {
-        const device = await (navigator as any).bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: ["000018f0-0000-1000-8000-00805f9b34fb"],
-        });
-        setMsg(`Selected: ${device.name || "Bluetooth printer"} — pair in OS settings, then use System print for reliability.`);
-      } catch (e: any) {
-        setMsg(e?.message || "Bluetooth cancelled");
-      }
-    }
+    printOrderReceipt({
+      orderNo: 0,
+      items: [{ name: "Test item", qty: 1, price: 0 }],
+      total: 0,
+    });
+    setMsg("Print dialog opened — pick your printer");
   };
 
   return (

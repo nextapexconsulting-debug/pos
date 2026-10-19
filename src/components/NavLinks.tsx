@@ -52,20 +52,21 @@ export default function NavLinks() {
   }, []);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap">
       {pathname !== "/" && (
         <Link
           href="/"
-          className="text-xs bg-white text-orange-600 hover:bg-orange-50 font-bold px-3 py-1.5 rounded-lg shadow-sm"
+          className="inline-flex items-center justify-center h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm bg-white text-orange-600 hover:bg-orange-50 font-bold rounded-lg shadow-sm"
         >
-          + New Order
+          <span className="sm:hidden">+ Order</span>
+          <span className="hidden sm:inline">+ New Order</span>
         </Link>
       )}
       <details ref={detailsRef} className="relative">
-        <summary className="list-none cursor-pointer text-xs bg-white text-orange-700 hover:bg-orange-50 px-3 py-1.5 rounded-lg select-none font-bold border border-orange-100 shadow-sm">
+        <summary className="list-none cursor-pointer inline-flex items-center justify-center h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm bg-white text-orange-700 hover:bg-orange-50 font-bold rounded-lg border border-orange-100 shadow-sm select-none">
           ☰ Menu
         </summary>
-        <div className="absolute right-0 mt-2 w-52 bg-white border border-orange-200 rounded-xl shadow-xl z-30 overflow-hidden text-slate-800">
+        <div className="absolute right-0 mt-2 w-52 max-h-[70vh] overflow-y-auto bg-white border border-orange-200 rounded-xl shadow-xl z-30 text-slate-800">
           {links.map(({ href, label }) => (
             <Link
               key={href}
@@ -83,6 +84,7 @@ export default function NavLinks() {
             </Link>
           ))}
           <button
+            type="button"
             onClick={logout}
             className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-orange-50 border-t border-orange-100"
           >
