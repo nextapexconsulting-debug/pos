@@ -34,59 +34,6 @@ export function savePrinterCfg(cfg: PrinterCfg) {
   localStorage.setItem(KEY, JSON.stringify(cfg));
 }
 
-function buildReceiptHtml(opts: {
-  orderNo: number;
-  items: { name: string; qty: number; price: number }[];
-  total: number;
-  parcel?: boolean;
-  jain?: boolean;
-  shopHeader: string;
-  paperWidth: "58" | "80";
-}): string {
-  const width = opts.paperWidth === "80" ? "300px" : "220px";
-  const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""]
-    .filter(Boolean)
-    .join(" · ");
-  const items = opts.items
-    .map(
-      (i) =>
-        `<div style="margin:4px 0"><div>${i.qty}× ${escapeHtml(i.name)}</div><div style="text-align:right">₹${i.price * i.qty}</div></div>`
-    )
-    .join("");
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Order #${opts.orderNo}</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:ui-monospace,Menlo,monospace;font-size:13px;padding:12px;color:#000;background:#fff}
-  .r{width:${width};max-width:100%;margin:0 auto}
-  h1{font-size:15px;text-align:center;margin-bottom:6px}
-  .line{border-top:1px dashed #000;margin:8px 0}
-  .total{font-size:16px;font-weight:700;text-align:right;margin-top:6px}
-  @media print{body{padding:0} .noprint{display:none!important}}
-</style></head><body>
-<div class="r">
-  <h1>${escapeHtml(opts.shopHeader)}</h1>
-  <div class="line"></div>
-  <div><b>Order #${opts.orderNo}</b></div>
-  <div>${new Date().toLocaleString("en-IN")}</div>
-  ${flags ? `<div><b>${flags}</b></div>` : ""}
-  <div class="line"></div>
-  ${items}
-  <div class="line"></div>
-  <div class="total">TOTAL  ₹${opts.total}</div>
-  <div class="line"></div>
-  <div style="text-align:center;margin-top:8px">Thank you</div>
-</div>
-<script>
-  window.onload=function(){
-    setTimeout(function(){
-      try{window.focus();window.print();}catch(e){}
-    },250);
-  };
-</script>
-</body></html>`;
-}
-
 function escapeHtml(s: string) {
   return String(s)
     .replace(/&/g, "&amp;")
@@ -96,8 +43,8 @@ function escapeHtml(s: string) {
 }
 
 /**
- * Mobile-safe print: uses hidden iframe (popup blockers often block window.open on phones).
- * Falls back to same-tab print document if iframe fails.
+ * Print on the SAME page (no new tab / no extra history).
+ * Mobile: dismiss print dialog → one Back stays in the app.
  */
 export function printOrderReceipt(opts: {
   orderNo: number;
@@ -106,67 +53,89 @@ export function printOrderReceipt(opts: {
   parcel?: boolean;
   jain?: boolean;
 }) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+
   const cfg = loadPrinterCfg();
-  // Print always allowed when user taps Print (cfg.enabled only for auto after Okay)
-  const html = buildReceiptHtml({
-    ...opts,
-    shopHeader: cfg.shopHeader,
-    paperWidth: cfg.paperWidth,
-  });
+  const width = cfg.paperWidth === "80" ? "300px" : "220px";
+  const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""]
+    .filter(Boolean)
+    .join(" · ");
 
-  try {
-    // Remove old iframe if any
-    document.getElementById("pos-print-frame")?.remove();
+  // Remove previous print root if any
+  document.getElementById("pos-print-root")?.remove();
 
-    const iframe = document.createElement("iframe");
-    iframe.id = "pos-print-frame";
-    iframe.setAttribute("aria-hidden", "true");
-    iframe.style.cssText =
-      "position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none";
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!doc) throw new Error("no iframe document");
-
-    doc.open();
-    doc.write(html);
-    doc.close();
-
-    // iOS sometimes needs explicit contentWindow.print after load
-    const win = iframe.contentWindow;
-    if (win) {
-      setTimeout(() => {
-        try {
-          win.focus();
-          win.print();
-        } catch {
-          fallbackPrint(html);
+  const root = document.createElement("div");
+  root.id = "pos-print-root";
+  root.innerHTML = `
+    <style id="pos-print-style">
+      /* Screen: hide receipt completely */
+      #pos-print-root {
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        width: ${width};
+        pointer-events: none;
+      }
+      @media print {
+        /* Print only the receipt — hide the app UI */
+        body * { visibility: hidden !important; }
+        #pos-print-root, #pos-print-root * { visibility: visible !important; }
+        #pos-print-root {
+          position: absolute !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 100% !important;
+          pointer-events: auto !important;
         }
-      }, 300);
-    }
-  } catch {
-    fallbackPrint(html);
-  }
-}
+        #pos-print-root .sheet {
+          width: ${width};
+          max-width: 100%;
+          margin: 0 auto;
+          font-family: ui-monospace, Menlo, monospace;
+          font-size: 13px;
+          color: #000;
+        }
+      }
+    </style>
+    <div class="sheet">
+      <div style="text-align:center;font-weight:700;font-size:15px;margin-bottom:6px">${escapeHtml(cfg.shopHeader)}</div>
+      <div style="border-top:1px dashed #000;margin:8px 0"></div>
+      <div><b>Order #${opts.orderNo}</b></div>
+      <div>${new Date().toLocaleString("en-IN")}</div>
+      ${flags ? `<div><b>${flags}</b></div>` : ""}
+      <div style="border-top:1px dashed #000;margin:8px 0"></div>
+      ${opts.items
+        .map(
+          (i) =>
+            `<div style="margin:4px 0;display:flex;justify-content:space-between;gap:8px"><span>${i.qty}× ${escapeHtml(i.name)}</span><span>₹${i.price * i.qty}</span></div>`
+        )
+        .join("")}
+      <div style="border-top:1px dashed #000;margin:8px 0"></div>
+      <div style="font-size:16px;font-weight:700;text-align:right">TOTAL  ₹${opts.total}</div>
+      <div style="border-top:1px dashed #000;margin:8px 0"></div>
+      <div style="text-align:center;margin-top:8px">Thank you</div>
+    </div>
+  `;
+  document.body.appendChild(root);
 
-function fallbackPrint(html: string) {
-  // Same-tab approach: open blob URL (works better on some mobile browsers)
-  try {
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const w = window.open(url, "_blank");
-    if (!w) {
-      // Last resort: navigate current tab
-      const a = document.createElement("a");
-      a.href = url;
-      a.target = "_blank";
-      a.rel = "noopener";
-      a.click();
-    }
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  } catch (e) {
-    console.error("print failed", e);
-    alert("Print failed. Allow pop-ups for this site, or use browser Share → Print.");
-  }
+  const cleanup = () => {
+    document.getElementById("pos-print-root")?.remove();
+    window.removeEventListener("afterprint", cleanup);
+  };
+  window.addEventListener("afterprint", cleanup);
+
+  // Defer so the DOM is ready (helps iOS/Android)
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      try {
+        window.print();
+      } catch (e) {
+        console.error(e);
+        cleanup();
+        alert("Could not open print. Try again.");
+      }
+      // Safety cleanup if afterprint never fires (some Android WebViews)
+      setTimeout(cleanup, 60_000);
+    });
+  });
 }
