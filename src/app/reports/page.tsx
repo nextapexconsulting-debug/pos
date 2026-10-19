@@ -108,6 +108,7 @@ function Body() {
 
   return (
     <>
+      <p className="text-sm text-slate-600">Pick a report below. Use date range and presets to track sales, cash, stock and costs.</p>
       <div className="flex gap-2 overflow-x-auto pb-1">
         {REPORTS.map((r) => (
           <button key={r.id} onClick={() => setId(r.id)}

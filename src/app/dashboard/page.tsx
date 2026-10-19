@@ -78,6 +78,9 @@ function Body() {
 
   return (
     <>
+      <a href="/expenses" className="block text-center bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl py-3">
+        Open Expenses (add / edit costs)
+      </a>
       <input type="date" className={input + " !w-auto"} value={date} max={todayIST()} onChange={(e) => setDate(e.target.value)} />
 
       <div className={`${card} space-y-2`}>
@@ -106,7 +109,7 @@ function Body() {
         <p className="text-[11px] text-slate-500">Spread over days: 1 = whole amount counts today · 5 = bread that lasts 5 days · 30 = monthly salary.</p>
         <div className="flex gap-1.5 flex-wrap">
           {PRESETS.map((p) => (
-            <button type="button" key={p} onClick={() => setCat(p)} className="text-xs bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded-full">{p}</button>
+            <button type="button" key={p} onClick={() => setCat(p)} className="text-xs bg-orange-500 hover:bg-orange-600 text-white px-2.5 py-1 rounded-full">{p}</button>
           ))}
         </div>
         <button className={btn} disabled={busy}>{busy ? "Saving…" : "Add & deduct from income"}</button>

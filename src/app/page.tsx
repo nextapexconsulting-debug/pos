@@ -5,6 +5,7 @@ import { Product, loadProducts, fetchShopProducts } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
 import AuthGate from "@/components/AuthGate";
 import NavLinks from "@/components/NavLinks";
+import { loadPrinterCfg, printOrderReceipt } from "@/lib/printer";
 import {
   OrderItem,
   parseSpokenOrder,
@@ -357,7 +358,20 @@ function VoicePOS() {
       hour12: true,
     });
 
-    const itemsText = order
+    try {
+      const pcfg = loadPrinterCfg();
+      if (pcfg.enabled) {
+        printOrderReceipt({
+          orderNo: newOrderNumber,
+          items: order.map((i) => ({ name: i.product.nameEn, qty: i.quantity, price: i.product.price })),
+          total,
+          parcel: parcelOn,
+          jain: jainOn,
+        });
+      }
+    } catch {}
+
+        const itemsText = order
       .map(
         (i) =>
           `• <b>${i.product.nameGu}</b>\n    ${i.quantity} × ₹${i.product.price} = <b>₹${i.product.price * i.quantity}</b>`
@@ -462,19 +476,16 @@ function VoicePOS() {
 
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col pb-36 md:pb-0">
-      {/* Header – orange / white */}
       <header className="bg-orange-500 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-20 shadow-md">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">Voice POS</h1>
-          <p className="text-xs text-orange-100">Krishna Sandwich - Pizza</p>
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tight">New Order</h1>
+          <nav className="text-[11px] text-orange-100 flex items-center gap-1">
+            <span className="text-white font-medium">Home</span>
+            <span>/</span>
+            <span>New Order</span>
+          </nav>
         </div>
-        <div className="flex items-center gap-3">
-          <NavLinks />
-          <div className="text-right">
-            <div className="text-2xl font-bold">₹{total}</div>
-            <div className="text-xs text-orange-100">Total</div>
-          </div>
-        </div>
+        <NavLinks />
       </header>
 
       <main className="flex-1 flex flex-col md:flex-row max-w-6xl mx-auto w-full min-h-0">

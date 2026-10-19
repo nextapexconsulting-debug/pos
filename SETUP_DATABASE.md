@@ -113,3 +113,7 @@ Creates `menu_products` table scoped by `shop_id` (same pattern as orders).
 
 Also still run (if not already):
 - `migration_parcel_jain_edit.sql`
+
+
+## Weekly billing
+Run `supabase/migration_weekly_billing.sql` to invoice platform fees every 7 days instead of monthly.

@@ -186,17 +186,12 @@ function MenuManager() {
     <div className="min-h-screen bg-white text-slate-900">
       <header className="bg-orange-500 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-md">
         <div>
-          <h1 className="text-xl font-bold">Menu Manager</h1>
-          <p className="text-xs text-orange-100">Shop menu · shared with all staff</p>
+          <h1 className="text-xl font-bold">Add / Edit Product</h1>
+          <p className="text-xs text-orange-100">Products for this shop</p>
         </div>
         <div className="flex items-center gap-2">
           <NavLinks />
-          <Link
-            href="/"
-            className="bg-white text-orange-600 hover:bg-orange-50 px-4 py-2 rounded-lg text-sm font-medium"
-          >
-            ← POS
-          </Link>
+          
         </div>
       </header>
 
