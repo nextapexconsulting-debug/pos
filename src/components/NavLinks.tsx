@@ -25,6 +25,7 @@ export default function NavLinks() {
                 { href: "/dashboard", label: "Today / Profit" },
                 { href: "/expenses", label: "Expenses" },
                 { href: "/stock", label: "Stock" },
+                { href: "/recipes", label: "Item recipes" },
                 { href: "/reports", label: "Reports" },
                 { href: "/menu", label: "Add / Edit Product" },
                 { href: "/printer", label: "Printer" },
@@ -32,7 +33,10 @@ export default function NavLinks() {
                 { href: "/staff", label: "Staff" },
                 { href: "/billing", label: "Billing" },
               ]
-            : [{ href: "/menu", label: "Add / Edit Product" }]),
+            : [
+            { href: "/menu", label: "Add / Edit Product" },
+            { href: "/recipes", label: "Item recipes" },
+          ]),
         ];
 
   useEffect(() => {

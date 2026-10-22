@@ -486,6 +486,8 @@ function VoicePOS() {
         parcel: parcelOn,
         jain: jainOn,
         orderedAt: entry.createdAt,
+        customerName: snapshot.customerName,
+        customerMobile: snapshot.customerMobile,
       });
       setOrder([]);
       setIsParcel(false);
@@ -513,6 +515,8 @@ function VoicePOS() {
         });
       }
     } catch {}
+    const custName = customerName.trim() || undefined;
+    const custMobile = customerMobile.trim() || undefined;
     setLastOrder({
       id: saved.order_id,
       no: newOrderNumber,
@@ -521,6 +525,8 @@ function VoicePOS() {
       parcel: parcelOn,
       jain: jainOn,
       orderedAt: placedAt,
+      customerName: custName,
+      customerMobile: custMobile,
     });
 
     const now = new Date();
@@ -540,8 +546,8 @@ function VoicePOS() {
           parcel: parcelOn,
           jain: jainOn,
           orderedAt: placedAt,
-          customerName: customerName.trim() || undefined,
-          customerMobile: customerMobile.trim() || undefined,
+          customerName: custName,
+          customerMobile: custMobile,
         });
       }
     } catch {}

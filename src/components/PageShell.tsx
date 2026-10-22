@@ -28,6 +28,7 @@ const CRUMBS: Record<string, string> = {
   "/billing": "Billing",
   "/settings": "Configuration",
   "/customers": "Customers",
+  "/recipes": "Item recipes",
 };
 
 export default function PageShell({
