@@ -2,11 +2,16 @@
 
 import { useEffect, useState } from "react";
 import PageShell, { card, input, btn, btn2 } from "@/components/PageShell";
+import {
+  loadPrinterCfg,
+  savePrinterCfg,
+  defaultPrinterCfg,
+  printOrderReceipt,
+  type PrinterCfg,
+  type Conn,
+} from "@/lib/printer";
 
-import { loadPrinterCfg, savePrinterCfg, defaultPrinterCfg, printOrderReceipt, type PrinterCfg, type Conn } from "@/lib/printer";
-type Cfg = PrinterCfg;
-const defaults = defaultPrinterCfg;
-const KEY = "pos-printer-cfg";
+type Cfg = PrinterCfg & { customerQrUrl?: string };
 
 export default function PrinterPage() {
   return (
@@ -17,16 +22,18 @@ export default function PrinterPage() {
 }
 
 function Body() {
-  const [cfg, setCfg] = useState<Cfg>(defaults);
+  const [cfg, setCfg] = useState<Cfg>(defaultPrinterCfg);
   const [msg, setMsg] = useState("");
   const [btSupported, setBtSupported] = useState(false);
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(KEY);
+      const raw = localStorage.getItem("pos-printer-cfg");
       if (raw) {
-        const parsed = { ...defaults, ...JSON.parse(raw) };
-        if (!parsed.instagramUrl && parsed.customerQrUrl) parsed.instagramUrl = parsed.customerQrUrl;
+        const parsed: Cfg = { ...defaultPrinterCfg, ...JSON.parse(raw) };
+        if (!parsed.instagramUrl && parsed.customerQrUrl) {
+          parsed.instagramUrl = parsed.customerQrUrl;
+        }
         if ((parsed.customerQrMm || 0) < 18) parsed.customerQrMm = 20;
         setCfg(parsed);
       }
@@ -54,7 +61,8 @@ function Body() {
       <div className={`${card} space-y-3`}>
         <h2 className="font-semibold">Setup (this device)</h2>
         <p className="text-xs text-slate-500">
-          Recommended: install printer drivers on the phone/PC, then use <b>System print</b>. That works for Bluetooth and Wi‑Fi printers and fails least often.
+          Recommended: install printer drivers on the phone/PC, then use <b>System print</b>. That
+          works for Bluetooth and Wi‑Fi printers and fails least often.
         </p>
 
         <label className="flex items-center gap-2 text-sm">
@@ -144,6 +152,7 @@ function Body() {
             <option value={2}>2 copies (e.g. customer + shop)</option>
           </select>
         </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <label className="text-xs text-slate-500">Copy 1 label</label>
@@ -165,9 +174,6 @@ function Body() {
             />
           </div>
         </div>
-        <p className="text-xs text-slate-500">
-          Example: 2 copies → first slip &quot;CUSTOMER COPY&quot;, second &quot;SHOP / KOT&quot;. Customer name and mobile print on both when entered on the order.
-        </p>
 
         <div className="border-t border-orange-100 pt-3 space-y-2">
           <h3 className="font-semibold text-sm">Customer slip QR codes</h3>
@@ -183,7 +189,7 @@ function Body() {
             <label className="text-xs text-slate-500">Instagram (@handle or URL)</label>
             <input
               className={input}
-              value={cfg.instagramUrl || cfg.customerQrUrl || ""}
+              value={cfg.instagramUrl || ""}
               onChange={(e) => setCfg({ ...cfg, instagramUrl: e.target.value })}
               placeholder="@yourshop"
             />
@@ -207,7 +213,7 @@ function Body() {
             />
           </div>
           <div>
-            <label className="text-xs text-slate-500">QR size (12mm is too small to scan)</label>
+            <label className="text-xs text-slate-500">QR size (12 mm does not scan well)</label>
             <select
               className={input}
               value={Math.max(18, cfg.customerQrMm || 20)}
@@ -220,12 +226,30 @@ function Body() {
             </select>
           </div>
           <p className="text-xs text-slate-500">
-            Labels print above each code: <b>Insta</b> · <b>WhatsApp</b> · <b>Menu</b>.
-            Shop/KOT copy stays text-only for long orders.
+            Labels above each code: <b>Insta</b> · <b>WhatsApp</b> · <b>Menu</b>. Shop/KOT copy stays
+            text-only for long orders.
           </p>
         </div>
 
-<div className={`${card} text-xs text-slate-600 space-y-1`}>
+        {btSupported && cfg.connection === "bluetooth" && (
+          <p className="text-xs text-amber-700">
+            Web Bluetooth needs Chrome on Android and a compatible ESC/POS printer. System print is
+            still more reliable.
+          </p>
+        )}
+
+        <div className="flex gap-2 flex-wrap">
+          <button type="button" className={btn} onClick={save}>
+            Save
+          </button>
+          <button type="button" className={btn2} onClick={testPrint}>
+            Test print
+          </button>
+        </div>
+        {msg && <p className="text-sm text-slate-600">{msg}</p>}
+      </div>
+
+      <div className={`${card} text-xs text-slate-600 space-y-1`}>
         <p className="font-semibold text-slate-800">How to not fail</p>
         <p>1. Pair the thermal printer in phone/PC Bluetooth or Wi‑Fi settings.</p>
         <p>2. Choose <b>System print</b> here and save.</p>
@@ -235,4 +259,3 @@ function Body() {
     </>
   );
 }
-
