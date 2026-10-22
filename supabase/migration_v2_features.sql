@@ -262,6 +262,7 @@ language sql stable security definer set search_path = public as $$
     and (p_to is null or o.order_date <= p_to)
   where c.shop_id = my_shop_id()
   group by c.id, c.name, c.mobile
-  order by total desc nulls last, c.name;
+  order by coalesce(sum(o.total) filter (where o.status = 'active'), 0) desc nulls last,
+           c.name;
 $$;
 grant execute on function report_customers(date, date) to authenticated;

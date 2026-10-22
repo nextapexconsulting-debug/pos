@@ -7,6 +7,13 @@ import AuthGate from "@/components/AuthGate";
 import AppHeader from "@/components/AppHeader";
 import { loadPrinterCfg, printOrderReceipt } from "@/lib/printer";
 import {
+  enqueueOrder,
+  loadQueue,
+  removeFromQueue,
+  isProbablyOffline,
+  type QueuedOrder,
+} from "@/lib/offlineQueue";
+import {
   OrderItem,
   parseSpokenOrder,
   mergeOrderItems,
@@ -38,6 +45,9 @@ function VoicePOS() {
   const [isJain, setIsJain] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerMobile, setCustomerMobile] = useState("");
+  const [customerHint, setCustomerHint] = useState("");
+  const [queueCount, setQueueCount] = useState(0);
+  const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -315,6 +325,94 @@ function VoicePOS() {
     setStatus("Order cleared");
   };
 
+
+  // Customer quick-pick: mobile → known name
+  useEffect(() => {
+    const digits = customerMobile.replace(/[^0-9]/g, "");
+    if (digits.length < 8) {
+      setCustomerHint("");
+      return;
+    }
+    if (lookupTimer.current) clearTimeout(lookupTimer.current);
+    lookupTimer.current = setTimeout(async () => {
+      try {
+        const key = digits.length >= 10 ? digits.slice(-10) : digits;
+        // Stored mobiles are digit-only from upsert_customer
+        let row: { name: string; mobile: string } | null = null;
+        const { data: exact } = await supabase
+          .from("customers")
+          .select("name, mobile")
+          .eq("mobile", digits)
+          .maybeSingle();
+        row = exact;
+        if (!row && key !== digits) {
+          const { data: by10 } = await supabase
+            .from("customers")
+            .select("name, mobile")
+            .eq("mobile", key)
+            .maybeSingle();
+          row = by10;
+        }
+        if (!row) {
+          const { data: list } = await supabase
+            .from("customers")
+            .select("name, mobile")
+            .like("mobile", `%${key}`)
+            .limit(5);
+          row = (list || []).find((c) => (c.mobile || "").endsWith(key)) || null;
+        }
+        if (row?.name) {
+          setCustomerName((prev) => (prev.trim() ? prev : row!.name));
+          setCustomerHint(`Known customer: ${row.name}`);
+        } else {
+          setCustomerHint("New customer");
+        }
+      } catch {
+        setCustomerHint("");
+      }
+    }, 400);
+    return () => {
+      if (lookupTimer.current) clearTimeout(lookupTimer.current);
+    };
+  }, [customerMobile]);
+
+  // Offline queue: load count + flush when online
+  useEffect(() => {
+    setQueueCount(loadQueue().length);
+    const flush = async () => {
+      const q = loadQueue();
+      if (!q.length || isProbablyOffline()) return;
+      for (const entry of q) {
+        try {
+          const { data, error } = await supabase.rpc("place_order", entry.rpcArgs);
+          if (error || !data) continue;
+          removeFromQueue(entry.id);
+          // best-effort telegram
+          try {
+            const itemsText = entry.snapshot.items
+              .map((i) => `• ${i.name} × ${i.qty} = ₹${i.price * i.qty}`)
+              .join("\n");
+            await fetch("/api/send-telegram", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                orderText: `🆕 <b>Queued order synced</b>\n#${data.order_no}\n${itemsText}\n💰 ₹${data.total}`,
+                orderNumber: data.order_no,
+              }),
+            });
+          } catch {}
+        } catch {
+          break; // still offline / server down
+        }
+      }
+      setQueueCount(loadQueue().length);
+    };
+    flush();
+    const onOnline = () => flush();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
+
   const confirmOrder = async () => {
     if (order.length === 0) {
       setStatus("No items in order");
@@ -346,7 +444,60 @@ function VoicePOS() {
     if (customerName.trim()) rpcArgs.p_customer_name = customerName.trim();
     if (customerMobile.trim()) rpcArgs.p_customer_mobile = customerMobile.trim();
 
-    const { data: saved, error: saveErr } = await supabase.rpc("place_order", rpcArgs);
+    const snapshot = {
+      items: order.map((i) => ({ name: i.product.nameEn, qty: i.quantity, price: i.product.price })),
+      total,
+      parcel: parcelOn,
+      jain: jainOn,
+      customerName: customerName.trim() || undefined,
+      customerMobile: customerMobile.trim() || undefined,
+    };
+
+    const tryPlace = async () => {
+      if (isProbablyOffline()) return { data: null as any, error: { message: "offline" } };
+      return supabase.rpc("place_order", rpcArgs);
+    };
+
+    let { data: saved, error: saveErr } = await tryPlace();
+
+    // Network / server failure → queue locally and clear cart so counter can continue
+    const shouldQueue =
+      isProbablyOffline() ||
+      !saved ||
+      (saveErr &&
+        /failed to fetch|network|offline|timeout|Load failed|fetch/i.test(
+          saveErr.message || ""
+        ));
+
+    if (shouldQueue && (isProbablyOffline() || saveErr)) {
+      const entry: QueuedOrder = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        createdAt: new Date().toISOString(),
+        rpcArgs,
+        snapshot,
+      };
+      const n = enqueueOrder(entry);
+      setQueueCount(n);
+      setLastOrder({
+        id: entry.id,
+        no: 0,
+        total: snapshot.total,
+        items: snapshot.items,
+        parcel: parcelOn,
+        jain: jainOn,
+        orderedAt: entry.createdAt,
+      });
+      setOrder([]);
+      setIsParcel(false);
+      setIsJain(false);
+      setCustomerName("");
+      setCustomerMobile("");
+      setCustomerHint("");
+      setStatus(`Saved offline (${n} waiting). Will sync when online.`);
+      setIsSending(false);
+      return;
+    }
+
     if (saveErr || !saved) {
       setStatus(`❌ Not saved: ${saveErr?.message ?? "unknown error"}`);
       setIsSending(false);
@@ -501,6 +652,11 @@ function VoicePOS() {
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col pb-36 md:pb-0">
       <AppHeader title="New Order" breadcrumb="New Order" />
+      {queueCount > 0 && (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-xs text-center py-1.5 px-3">
+          {queueCount} order{queueCount > 1 ? "s" : ""} waiting offline — will upload when internet returns
+        </div>
+      )}
 
       <main className="flex-1 flex flex-col md:flex-row max-w-6xl mx-auto w-full min-h-0">
         {/* Left: Voice + Products */}
@@ -601,6 +757,11 @@ function VoicePOS() {
                 onChange={(e) => setCustomerMobile(e.target.value)}
               />
             </div>
+            {customerHint && (
+              <p className={`text-xs ${customerHint.startsWith("Known") ? "text-emerald-600" : "text-slate-400"}`}>
+                {customerHint}
+              </p>
+            )}
             {order.length === 0 ? (
               <p className="text-xs text-slate-400">Add items from the menu below</p>
             ) : (
