@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import PageShell, { card } from "@/components/PageShell";
@@ -8,15 +8,23 @@ import { supabase, inr } from "@/lib/supabase";
 
 export default function CustomerDetailPage() {
   return (
-    <PageShell title="Customer history" roles={["owner", "staff"]}>
-      <Body />
-    </PageShell>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-slate-400 text-sm">
+          Loading…
+        </div>
+      }
+    >
+      <PageShell title="Customer history" roles={["owner", "staff"]}>
+        <Body />
+      </PageShell>
+    </Suspense>
   );
 }
 
 function Body() {
   const params = useParams();
-  const id = String(params.id || "");
+  const id = String(params?.id || "");
   const [cust, setCust] = useState<{ name: string; mobile: string; notes: string | null } | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [err, setErr] = useState("");
