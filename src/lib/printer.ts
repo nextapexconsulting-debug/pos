@@ -8,6 +8,12 @@ export interface PrinterCfg {
   paperWidth: "58" | "80";
   autoPrint: boolean;
   shopHeader: string;
+  /** How many slips per print */
+  copies: 1 | 2;
+  /** Label for first copy */
+  copy1Label: string;
+  /** Label for second copy (used when copies === 2) */
+  copy2Label: string;
 }
 
 const KEY = "pos-printer-cfg";
@@ -19,13 +25,21 @@ export const defaultPrinterCfg: PrinterCfg = {
   paperWidth: "58",
   autoPrint: false,
   shopHeader: "Krishna Sandwich - Pizza",
+  copies: 2,
+  copy1Label: "CUSTOMER COPY",
+  copy2Label: "SHOP / KOT",
 };
 
 export function loadPrinterCfg(): PrinterCfg {
   if (typeof window === "undefined") return defaultPrinterCfg;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return { ...defaultPrinterCfg, ...JSON.parse(raw) };
+    if (raw) {
+      const parsed = { ...defaultPrinterCfg, ...JSON.parse(raw) };
+      // normalize copies
+      parsed.copies = Number(parsed.copies) === 1 ? 1 : 2;
+      return parsed;
+    }
   } catch {}
   return defaultPrinterCfg;
 }
@@ -41,7 +55,6 @@ function escapeHtml(s: string) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
-
 
 function formatOrderTime(orderedAt?: string | Date | null): string {
   const d = orderedAt ? new Date(orderedAt) : new Date();
@@ -59,11 +72,60 @@ function formatOrderTime(orderedAt?: string | Date | null): string {
   });
 }
 
+function buildSlipHtml(
+  opts: {
+    orderNo: number;
+    items: { name: string; qty: number; price: number }[];
+    total: number;
+    parcel?: boolean;
+    jain?: boolean;
+    orderedAt?: string | Date | null;
+    customerName?: string | null;
+    customerMobile?: string | null;
+  },
+  cfg: PrinterCfg,
+  copyLabel: string
+): string {
+  const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""]
+    .filter(Boolean)
+    .join(" · ");
+  const name = (opts.customerName || "").trim();
+  const mobile = (opts.customerMobile || "").trim();
+  const customerBlock =
+    name || mobile
+      ? `<div class="sep"></div>
+         ${name ? `<div><b>Name:</b> ${escapeHtml(name)}</div>` : ""}
+         ${mobile ? `<div><b>Mobile:</b> ${escapeHtml(mobile)}</div>` : ""}`
+      : "";
+
+  const items = opts.items
+    .map(
+      (i) =>
+        `<div class="row"><span>${i.qty}× ${escapeHtml(i.name)}</span><span>₹${i.price * i.qty}</span></div>`
+    )
+    .join("");
+
+  return `
+    <div class="sheet">
+      <div class="copy">${escapeHtml(copyLabel)}</div>
+      <div class="head">${escapeHtml(cfg.shopHeader)}</div>
+      <div class="sep"></div>
+      <div><b>Order #${opts.orderNo || "—"}</b></div>
+      <div>${formatOrderTime(opts.orderedAt)}</div>
+      ${flags ? `<div><b>${flags}</b></div>` : ""}
+      ${customerBlock}
+      <div class="sep"></div>
+      ${items}
+      <div class="sep"></div>
+      <div class="total">TOTAL  ₹${opts.total}</div>
+      <div class="sep"></div>
+      <div style="text-align:center">Thank you</div>
+    </div>`;
+}
+
 /**
- * Same-page print:
- * - Only receipt content is printed (no blank pages from hidden UI)
- * - Long orders flow to next page automatically
- * - No extra browser history on mobile
+ * Print KOT/receipt. Copies and labels come from Printer settings.
+ * Customer name/mobile printed when provided.
  */
 export function printOrderReceipt(opts: {
   orderNo: number;
@@ -71,25 +133,30 @@ export function printOrderReceipt(opts: {
   total: number;
   parcel?: boolean;
   jain?: boolean;
-  /** When the order was placed (ISO string or Date). Defaults to now only if missing. */
   orderedAt?: string | Date | null;
+  customerName?: string | null;
+  customerMobile?: string | null;
 }) {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
   const cfg = loadPrinterCfg();
-  // Thermal widths ~58mm / 80mm at ~96dpi
   const widthMm = cfg.paperWidth === "80" ? 72 : 48;
-  const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""]
-    .filter(Boolean)
-    .join(" · ");
+  const copies = cfg.copies === 1 ? 1 : 2;
+  const label1 = cfg.copy1Label || "CUSTOMER COPY";
+  const label2 = cfg.copy2Label || "SHOP / KOT";
 
   document.getElementById("pos-print-root")?.remove();
+
+  const slips: string[] = [];
+  slips.push(buildSlipHtml(opts, cfg, label1));
+  if (copies === 2) {
+    slips.push(buildSlipHtml(opts, cfg, label2));
+  }
 
   const root = document.createElement("div");
   root.id = "pos-print-root";
   root.innerHTML = `
     <style>
-      /* On screen: park off-canvas, no layout impact */
       #pos-print-root {
         position: absolute;
         left: -10000px;
@@ -103,12 +170,20 @@ export function printOrderReceipt(opts: {
         color: #000;
         width: ${widthMm}mm;
       }
+      #pos-print-root .copy {
+        text-align: center;
+        font-weight: 700;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+      }
       #pos-print-root .row {
         display: flex;
         justify-content: space-between;
         gap: 6px;
         margin: 2px 0;
         page-break-inside: avoid;
+        break-inside: avoid;
       }
       #pos-print-root .sep {
         border-top: 1px dashed #000;
@@ -125,14 +200,16 @@ export function printOrderReceipt(opts: {
         font-weight: 700;
         text-align: right;
       }
-
+      #pos-print-root .break {
+        page-break-after: always;
+        break-after: page;
+        height: 0;
+      }
       @page {
         margin: 4mm;
         size: auto;
       }
-
       @media print {
-        /* Hide entire app — display:none so it takes NO space (avoids blank pages) */
         html, body {
           height: auto !important;
           margin: 0 !important;
@@ -156,36 +233,14 @@ export function printOrderReceipt(opts: {
           max-width: 100%;
           margin: 0 auto;
         }
-        /* Allow natural page breaks for long orders; keep each line together */
-        #pos-print-root .row {
-          page-break-inside: avoid;
-          break-inside: avoid;
-        }
-        #pos-print-root .head,
-        #pos-print-root .total {
-          page-break-inside: avoid;
-          break-inside: avoid;
-        }
       }
     </style>
-    <div class="sheet">
-      <div class="head">${escapeHtml(cfg.shopHeader)}</div>
-      <div class="sep"></div>
-      <div><b>Order #${opts.orderNo}</b></div>
-      <div>${formatOrderTime(opts.orderedAt)}</div>
-      ${flags ? `<div><b>${flags}</b></div>` : ""}
-      <div class="sep"></div>
-      ${opts.items
-        .map(
-          (i) =>
-            `<div class="row"><span>${i.qty}× ${escapeHtml(i.name)}</span><span>₹${i.price * i.qty}</span></div>`
-        )
-        .join("")}
-      <div class="sep"></div>
-      <div class="total">TOTAL  ₹${opts.total}</div>
-      <div class="sep"></div>
-      <div style="text-align:center">Thank you</div>
-    </div>
+    ${slips
+      .map(
+        (html, i) =>
+          html + (i < slips.length - 1 ? '<div class="break"></div>' : "")
+      )
+      .join("")}
   `;
   document.body.appendChild(root);
 

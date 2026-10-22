@@ -38,7 +38,7 @@ function VoicePOS() {
   const [error, setError] = useState<string | null>(null);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
-  const [lastOrder, setLastOrder] = useState<{ id: string; no: number; total: number; paid?: string; items: { name: string; qty: number; price: number }[]; parcel?: boolean; jain?: boolean; orderedAt?: string } | null>(null);
+  const [lastOrder, setLastOrder] = useState<{ id: string; no: number; total: number; paid?: string; items: { name: string; qty: number; price: number }[]; parcel?: boolean; jain?: boolean; orderedAt?: string; customerName?: string; customerMobile?: string } | null>(null);
   const [isSupported, setIsSupported] = useState(false);
   const [priceTab, setPriceTab] = useState<string>("all");
   const [isParcel, setIsParcel] = useState(false);
@@ -540,6 +540,8 @@ function VoicePOS() {
           parcel: parcelOn,
           jain: jainOn,
           orderedAt: placedAt,
+          customerName: customerName.trim() || undefined,
+          customerMobile: customerMobile.trim() || undefined,
         });
       }
     } catch {}
@@ -685,6 +687,8 @@ function VoicePOS() {
                     parcel: lastOrder.parcel,
                     jain: lastOrder.jain,
                     orderedAt: lastOrder.orderedAt,
+                    customerName: lastOrder.customerName,
+                    customerMobile: lastOrder.customerMobile,
                   })
                 }
                 className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-3 py-2 rounded-lg"

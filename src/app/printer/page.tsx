@@ -128,6 +128,42 @@ function Body() {
           />
         </div>
 
+        <div>
+          <label className="text-xs text-slate-500">Copies per print</label>
+          <select
+            className={input}
+            value={cfg.copies ?? 2}
+            onChange={(e) => setCfg({ ...cfg, copies: Number(e.target.value) === 1 ? 1 : 2 })}
+          >
+            <option value={1}>1 copy only</option>
+            <option value={2}>2 copies (e.g. customer + shop)</option>
+          </select>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs text-slate-500">Copy 1 label</label>
+            <input
+              className={input}
+              value={cfg.copy1Label ?? "CUSTOMER COPY"}
+              onChange={(e) => setCfg({ ...cfg, copy1Label: e.target.value })}
+              placeholder="CUSTOMER COPY"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500">Copy 2 label (if 2 copies)</label>
+            <input
+              className={input}
+              value={cfg.copy2Label ?? "SHOP / KOT"}
+              onChange={(e) => setCfg({ ...cfg, copy2Label: e.target.value })}
+              placeholder="SHOP / KOT"
+              disabled={(cfg.copies ?? 2) === 1}
+            />
+          </div>
+        </div>
+        <p className="text-xs text-slate-500">
+          Example: 2 copies → first slip &quot;CUSTOMER COPY&quot;, second &quot;SHOP / KOT&quot;. Customer name and mobile print on both when entered on the order.
+        </p>
+
         <div className="flex gap-2 flex-wrap">
           <button type="button" className={btn} onClick={save}>
             Save settings

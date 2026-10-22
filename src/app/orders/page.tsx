@@ -9,7 +9,7 @@ import Link from "next/link";
 
 interface Item { name_en: string; qty: number; price: number; line_total: number }
 interface Order {
-  id: string; order_no: number; created_at: string; total: number; status: string;
+  id: string; order_no: number; created_at: string; total: number; status: string; customer_name?: string | null; customer_mobile?: string | null;
   payment_status: "paid" | "unpaid"; payment_method: "cash" | "upi" | null;
   is_parcel?: boolean; is_jain?: boolean;
   order_items: Item[];
@@ -34,7 +34,7 @@ function Orders() {
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from("orders")
-      .select("id,order_no,created_at,total,status,payment_status,payment_method,is_parcel,is_jain,order_items(name_en,qty,price,line_total)")
+      .select("id,order_no,created_at,total,status,payment_status,payment_method,is_parcel,is_jain,customer_name,customer_mobile,order_items(name_en,qty,price,line_total)")
       .eq("order_date", date)
       .order("order_no", { ascending: false });
     if (error) setErr(error.message);
@@ -124,6 +124,8 @@ function Orders() {
                   parcel: o.is_parcel === true,
                   jain: o.is_jain === true,
                   orderedAt: o.created_at,
+                  customerName: o.customer_name,
+                  customerMobile: o.customer_mobile,
                 })
               }
             >
