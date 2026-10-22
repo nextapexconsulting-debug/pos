@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
 import { usePathname } from "next/navigation";
 import AuthGate from "./AuthGate";
 import AppHeader from "./AppHeader";
@@ -39,7 +39,7 @@ export default function PageShell({
   roles?: string[];
   children: ReactNode;
 }) {
-  const pathname = usePathname();
+  const pathname = usePathname() || "/";
   const crumb = CRUMBS[pathname] || title;
 
   return (

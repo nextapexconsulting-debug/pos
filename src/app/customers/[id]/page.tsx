@@ -8,29 +8,30 @@ import { supabase, inr } from "@/lib/supabase";
 
 export default function CustomerDetailPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center text-slate-400 text-sm">
-          Loading…
-        </div>
-      }
-    >
-      <PageShell title="Customer history" roles={["owner", "staff"]}>
-        <Body />
-      </PageShell>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-slate-400 text-sm">Loading…</div>}>
+      <CustomerDetailInner />
     </Suspense>
+  );
+}
+
+function CustomerDetailInner() {
+  return (
+    <PageShell title="Customer history" roles={["owner", "staff"]}>
+      <Body />
+    </PageShell>
   );
 }
 
 function Body() {
   const params = useParams();
-  const id = String(params?.id || "");
+  const id = String(params?.id ?? "");
   const [cust, setCust] = useState<{ name: string; mobile: string; notes: string | null } | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [err, setErr] = useState("");
 
   useEffect(() => {
     if (!id) return;
+    let alive = true;
     (async () => {
       const [{ data: c, error: e1 }, { data: o, error: e2 }] = await Promise.all([
         supabase.from("customers").select("name,mobile,notes").eq("id", id).maybeSingle(),
@@ -42,10 +43,14 @@ function Body() {
           .eq("customer_id", id)
           .order("created_at", { ascending: false }),
       ]);
+      if (!alive) return;
       if (e1 || e2) setErr(e1?.message || e2?.message || "");
       setCust(c);
       setOrders(o ?? []);
     })();
+    return () => {
+      alive = false;
+    };
   }, [id]);
 
   return (
