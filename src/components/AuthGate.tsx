@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, inr } from "@/lib/supabase";
+import { isNetworkError, isProbablyOffline, flushQueue } from "@/lib/offlineQueue";
 
 export interface Access {
   ok: boolean;
@@ -23,7 +24,24 @@ export const useAccess = () => useContext(Ctx);
 
 const SUPPORT = process.env.NEXT_PUBLIC_SUPPORT_CONTACT || "the app administrator";
 
+const ACCESS_CACHE = "pos-access-cache";
+
+function readAccessCache(): { uid: string; access: Access } | null {
+  try {
+    const raw = localStorage.getItem(ACCESS_CACHE);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function writeAccessCache(uid: string, access: Access) {
+  try {
+    // Only remember a good, working account – never cache a block / overdue screen.
+    if (access?.ok) localStorage.setItem(ACCESS_CACHE, JSON.stringify({ uid, access }));
+    else localStorage.removeItem(ACCESS_CACHE);
+  } catch {}
+}
+
 export async function logout() {
+  try { localStorage.removeItem(ACCESS_CACHE); } catch {}
   await supabase.auth.signOut();
   window.location.href = "/login";
 }
@@ -36,16 +54,31 @@ export async function logout() {
 export default function AuthGate({ children, roles }: { children: ReactNode; roles?: string[] }) {
   const router = useRouter();
   const [access, setAccess] = useState<Access | null>(null);
+  const [offline, setOffline] = useState(false);
 
   useEffect(() => {
     let alive = true;
     const load = async () => {
       const { data: s } = await supabase.auth.getSession();
-      if (!s.session) return router.replace("/login");
+      const cached = readAccessCache();
+      if (!s.session) {
+        // Offline with an expired token: keep the shop usable from last known good access.
+        if (isProbablyOffline() && cached?.access.ok) { setAccess(cached.access); return; }
+        return router.replace("/login");
+      }
       const { data, error } = await supabase.rpc("my_access");
       if (!alive) return;
-      if (error) setAccess({ ok: false, reason: "no_profile", message: error.message });
-      else setAccess(data as Access);
+      if (error) {
+        // Connection problem (not a server "no"): fall back to last known good access.
+        if (isNetworkError(error.message) && cached?.access.ok && cached.uid === s.session.user.id) {
+          setAccess(cached.access);
+        } else {
+          setAccess({ ok: false, reason: "no_profile", message: error.message });
+        }
+      } else {
+        writeAccessCache(s.session.user.id, data as Access);
+        setAccess(data as Access);
+      }
     };
     load();
     const { data: sub } = supabase.auth.onAuthStateChange((evt) => {
@@ -53,6 +86,23 @@ export default function AuthGate({ children, roles }: { children: ReactNode; rol
     });
     return () => { alive = false; sub.subscription.unsubscribe(); };
   }, [router]);
+
+  // Offline banner + upload any queued orders whenever internet returns (on any page)
+  useEffect(() => {
+    const sync = () => { setOffline(isProbablyOffline()); };
+    sync();
+    const onOnline = () => { sync(); flushQueue(); };
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (access?.ok) flushQueue();
+  }, [access?.ok]);
 
   useEffect(() => {
     if (access?.ok && access.role === "super_admin" && roles && !roles.includes("super_admin")) {
@@ -108,6 +158,11 @@ export default function AuthGate({ children, roles }: { children: ReactNode; rol
 
   return (
     <Ctx.Provider value={access}>
+      {offline && (
+        <div className="bg-slate-800 text-white text-xs px-4 py-1.5 text-center">
+          📴 No internet — new orders on the POS are saved and uploaded later. Other pages need internet to save.
+        </div>
+      )}
       {access.warning && access.role === "owner" && (
         <div className="bg-amber-500/15 border-b border-amber-500/40 text-amber-200 text-xs px-4 py-2 text-center">
           ⚠️ Bill for {access.warning.period_start.slice(0, 7)}: {inr(access.warning.amount)} — pay by{" "}

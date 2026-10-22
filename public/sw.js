@@ -1,10 +1,19 @@
 /* Voice POS service worker – cache shell for offline open */
-const CACHE = "voice-pos-v1";
+const CACHE = "voice-pos-v2";
 const PRECACHE = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png"];
+// Warm the main screens so they open offline even if never visited. Best-effort:
+// one failing route must not break the install.
+const WARM = ["/orders", "/customers", "/dashboard", "/expenses", "/stock", "/printer", "/menu"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      .then((c) =>
+        c.addAll(PRECACHE).then(() =>
+          Promise.all(WARM.map((u) => c.add(u).catch(() => {})))
+        )
+      )
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -31,11 +40,15 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy));
+          }
           return res;
         })
-        .catch(() => caches.match(req).then((r) => r || caches.match("/")))
+        .catch(() =>
+          caches.match(req, { ignoreSearch: true }).then((r) => r || caches.match("/"))
+        )
     );
     return;
   }

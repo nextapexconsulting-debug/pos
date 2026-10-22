@@ -9,8 +9,9 @@ import { loadPrinterCfg, printOrderReceipt } from "@/lib/printer";
 import {
   enqueueOrder,
   loadQueue,
-  removeFromQueue,
   isProbablyOffline,
+  isNetworkError,
+  flushQueue,
   type QueuedOrder,
 } from "@/lib/offlineQueue";
 import {
@@ -378,39 +379,16 @@ function VoicePOS() {
 
   // Offline queue: load count + flush when online
   useEffect(() => {
-    setQueueCount(loadQueue().length);
-    const flush = async () => {
-      const q = loadQueue();
-      if (!q.length || isProbablyOffline()) return;
-      for (const entry of q) {
-        try {
-          const { data, error } = await supabase.rpc("place_order", entry.rpcArgs);
-          if (error || !data) continue;
-          removeFromQueue(entry.id);
-          // best-effort telegram
-          try {
-            const itemsText = entry.snapshot.items
-              .map((i) => `• ${i.name} × ${i.qty} = ₹${i.price * i.qty}`)
-              .join("\n");
-            await fetch("/api/send-telegram", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                orderText: `🆕 <b>Queued order synced</b>\n#${data.order_no}\n${itemsText}\n💰 ₹${data.total}`,
-                orderNumber: data.order_no,
-              }),
-            });
-          } catch {}
-        } catch {
-          break; // still offline / server down
-        }
-      }
-      setQueueCount(loadQueue().length);
-    };
-    flush();
-    const onOnline = () => flush();
+    const refreshCount = () => setQueueCount(loadQueue().length);
+    refreshCount();
+    flushQueue();
+    const onOnline = () => { flushQueue(); };
     window.addEventListener("online", onOnline);
-    return () => window.removeEventListener("online", onOnline);
+    window.addEventListener("pos-queue-changed", refreshCount);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("pos-queue-changed", refreshCount);
+    };
   }, []);
 
   const confirmOrder = async () => {
@@ -460,16 +438,12 @@ function VoicePOS() {
 
     let { data: saved, error: saveErr } = await tryPlace();
 
-    // Network / server failure → queue locally and clear cart so counter can continue
+    // Queue ONLY for a real connection problem. Server rejections
+    // (access disabled, bad item…) must show an error, not pretend "saved offline".
     const shouldQueue =
-      isProbablyOffline() ||
-      !saved ||
-      (saveErr &&
-        /failed to fetch|network|offline|timeout|Load failed|fetch/i.test(
-          saveErr.message || ""
-        ));
+      isProbablyOffline() || (!!saveErr && isNetworkError(saveErr.message));
 
-    if (shouldQueue && (isProbablyOffline() || saveErr)) {
+    if (shouldQueue) {
       const entry: QueuedOrder = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         createdAt: new Date().toISOString(),
@@ -674,10 +648,10 @@ function VoicePOS() {
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-slate-800">Order #{lastOrder.no} · ₹{lastOrder.total}</div>
                 <div className="text-xs text-slate-500">
-                  {lastOrder.paid ? `Paid by ${lastOrder.paid.toUpperCase()} ✓` : "Mark payment (or do it later from Orders)"}
+                  {lastOrder.paid ? `Paid by ${lastOrder.paid.toUpperCase()} ✓` : lastOrder.no === 0 ? "Saved offline — will upload when internet returns" : "Mark payment (or do it later from Orders)"}
                 </div>
               </div>
-              {!lastOrder.paid && (
+              {!lastOrder.paid && lastOrder.no !== 0 && (
                 <>
                   <button type="button" onClick={() => markPaid("cash")} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">💵 Cash</button>
                   <button type="button" onClick={() => markPaid("upi")} className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-3 py-2 rounded-lg">📱 UPI</button>
