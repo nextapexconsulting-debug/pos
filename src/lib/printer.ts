@@ -224,29 +224,13 @@ export async function printOrderReceipt(opts: {
   const qrs: QrCell[] = [];
   if (cfg.customerQrEnabled) {
     const origin = window.location.origin;
-    // App deep-link via our /go/* pages (opens app more often than raw https)
-    const igHandle = (cfg.instagramUrl || "")
-      .trim()
-      .replace(/^@/, "")
-      .replace(/^https?:\/\/(www\.)?instagram\.com\//i, "")
-      .split(/[/?#]/)[0]
-      .trim();
-    const waDigits = (cfg.whatsappNumber || "").replace(/[^0-9]/g, "");
-    const waFull = waDigits.length === 10 ? "91" + waDigits : waDigits;
+    const ig = normalizeInstagram(cfg.instagramUrl || "");
+    const wa = normalizeWhatsApp(cfg.whatsappNumber || "");
     const menu = normalizeMenuUrl(cfg.menuUrl || "", origin);
+    // ~2.5–3 px per mm for decent scan on thermal
     const px = Math.round(qrMm * 4);
-    if (igHandle) {
-      qrs.push({
-        label: "Insta",
-        dataUrl: await makeQrDataUrl(`${origin}/go/ig?u=${encodeURIComponent(igHandle)}`, px),
-      });
-    }
-    if (waFull.length >= 11) {
-      qrs.push({
-        label: "WhatsApp",
-        dataUrl: await makeQrDataUrl(`${origin}/go/wa?n=${encodeURIComponent(waFull)}`, px),
-      });
-    }
+    if (ig) qrs.push({ label: "Insta", dataUrl: await makeQrDataUrl(ig, px) });
+    if (wa) qrs.push({ label: "WhatsApp", dataUrl: await makeQrDataUrl(wa, px) });
     if (menu) qrs.push({ label: "Menu", dataUrl: await makeQrDataUrl(menu, px) });
   }
 

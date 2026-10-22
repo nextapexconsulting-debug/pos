@@ -7,14 +7,6 @@ import AuthGate from "@/components/AuthGate";
 import AppHeader from "@/components/AppHeader";
 import { loadPrinterCfg, printOrderReceipt } from "@/lib/printer";
 import {
-  enqueueOrder,
-  loadQueue,
-  isProbablyOffline,
-  isNetworkError,
-  flushQueue,
-  type QueuedOrder,
-} from "@/lib/offlineQueue";
-import {
   OrderItem,
   parseSpokenOrder,
   mergeOrderItems,
@@ -47,7 +39,6 @@ function VoicePOS() {
   const [customerName, setCustomerName] = useState("");
   const [customerMobile, setCustomerMobile] = useState("");
   const [customerHint, setCustomerHint] = useState("");
-  const [queueCount, setQueueCount] = useState(0);
   const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -377,20 +368,6 @@ function VoicePOS() {
     };
   }, [customerMobile]);
 
-  // Offline queue: load count + flush when online
-  useEffect(() => {
-    const refreshCount = () => setQueueCount(loadQueue().length);
-    refreshCount();
-    flushQueue();
-    const onOnline = () => { flushQueue(); };
-    window.addEventListener("online", onOnline);
-    window.addEventListener("pos-queue-changed", refreshCount);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("pos-queue-changed", refreshCount);
-    };
-  }, []);
-
   const confirmOrder = async () => {
     if (order.length === 0) {
       setStatus("No items in order");
@@ -422,57 +399,7 @@ function VoicePOS() {
     if (customerName.trim()) rpcArgs.p_customer_name = customerName.trim();
     if (customerMobile.trim()) rpcArgs.p_customer_mobile = customerMobile.trim();
 
-    const snapshot = {
-      items: order.map((i) => ({ name: i.product.nameEn, qty: i.quantity, price: i.product.price })),
-      total,
-      parcel: parcelOn,
-      jain: jainOn,
-      customerName: customerName.trim() || undefined,
-      customerMobile: customerMobile.trim() || undefined,
-    };
-
-    const tryPlace = async () => {
-      if (isProbablyOffline()) return { data: null as any, error: { message: "offline" } };
-      return supabase.rpc("place_order", rpcArgs);
-    };
-
-    let { data: saved, error: saveErr } = await tryPlace();
-
-    // Queue ONLY for a real connection problem. Server rejections
-    // (access disabled, bad item…) must show an error, not pretend "saved offline".
-    const shouldQueue =
-      isProbablyOffline() || (!!saveErr && isNetworkError(saveErr.message));
-
-    if (shouldQueue) {
-      const entry: QueuedOrder = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        createdAt: new Date().toISOString(),
-        rpcArgs,
-        snapshot,
-      };
-      const n = enqueueOrder(entry);
-      setQueueCount(n);
-      setLastOrder({
-        id: entry.id,
-        no: 0,
-        total: snapshot.total,
-        items: snapshot.items,
-        parcel: parcelOn,
-        jain: jainOn,
-        orderedAt: entry.createdAt,
-        customerName: snapshot.customerName,
-        customerMobile: snapshot.customerMobile,
-      });
-      setOrder([]);
-      setIsParcel(false);
-      setIsJain(false);
-      setCustomerName("");
-      setCustomerMobile("");
-      setCustomerHint("");
-      setStatus(`Saved offline (${n} waiting). Will sync when online.`);
-      setIsSending(false);
-      return;
-    }
+    const { data: saved, error: saveErr } = await supabase.rpc("place_order", rpcArgs);
 
     if (saveErr || !saved) {
       setStatus(`❌ Not saved: ${saveErr?.message ?? "unknown error"}`);
@@ -634,11 +561,6 @@ function VoicePOS() {
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col pb-36 md:pb-0">
       <AppHeader title="New Order" breadcrumb="New Order" />
-      {queueCount > 0 && (
-        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-xs text-center py-1.5 px-3">
-          {queueCount} order{queueCount > 1 ? "s" : ""} waiting offline — will upload when internet returns
-        </div>
-      )}
 
       <main className="flex-1 flex flex-col md:flex-row max-w-6xl mx-auto w-full min-h-0">
         {/* Left: Voice + Products */}
@@ -648,10 +570,10 @@ function VoicePOS() {
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-slate-800">Order #{lastOrder.no} · ₹{lastOrder.total}</div>
                 <div className="text-xs text-slate-500">
-                  {lastOrder.paid ? `Paid by ${lastOrder.paid.toUpperCase()} ✓` : lastOrder.no === 0 ? "Saved offline — will upload when internet returns" : "Mark payment (or do it later from Orders)"}
+                  {lastOrder.paid ? `Paid by ${lastOrder.paid.toUpperCase()} ✓` : "Mark payment (or do it later from Orders)"}
                 </div>
               </div>
-              {!lastOrder.paid && lastOrder.no !== 0 && (
+              {!lastOrder.paid && (
                 <>
                   <button type="button" onClick={() => markPaid("cash")} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">💵 Cash</button>
                   <button type="button" onClick={() => markPaid("upi")} className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-3 py-2 rounded-lg">📱 UPI</button>

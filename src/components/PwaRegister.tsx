@@ -15,8 +15,14 @@ export default function PwaRegister() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Offline mode removed: clear any old service worker + cache so the POS always uses live data
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      navigator.serviceWorker.getRegistrations()
+        .then((regs) => regs.forEach((r) => r.unregister()))
+        .catch(() => {});
+      if ("caches" in window) {
+        caches.keys().then((ks) => ks.forEach((k) => caches.delete(k))).catch(() => {});
+      }
     }
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
