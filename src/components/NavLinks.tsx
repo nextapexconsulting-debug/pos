@@ -29,6 +29,7 @@ export default function NavLinks() {
                 { href: "/reports", label: "Reports" },
                 { href: "/menu", label: "Add / Edit Product" },
                 { href: "/printer", label: "Printer" },
+                { href: "/scanners", label: "QR scanners" },
                 { href: "/settings", label: "Configuration" },
                 { href: "/marketing", label: "Marketing / QR" },
                 { href: "/staff", label: "Staff" },
@@ -37,6 +38,7 @@ export default function NavLinks() {
             : [
             { href: "/menu", label: "Add / Edit Product" },
             { href: "/recipes", label: "Item recipes" },
+            { href: "/scanners", label: "QR scanners" },
           ]),
         ];
 

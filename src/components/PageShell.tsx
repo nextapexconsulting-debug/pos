@@ -30,6 +30,7 @@ const CRUMBS: Record<string, string> = {
   "/customers": "Customers",
   "/recipes": "Item recipes",
   "/marketing": "Marketing / QR",
+  "/scanners": "QR scanners",
 };
 
 export default function PageShell({
