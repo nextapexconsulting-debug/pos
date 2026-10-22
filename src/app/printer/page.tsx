@@ -24,7 +24,12 @@ function Body() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) setCfg({ ...defaults, ...JSON.parse(raw) });
+      if (raw) {
+        const parsed = { ...defaults, ...JSON.parse(raw) };
+        if (!parsed.instagramUrl && parsed.customerQrUrl) parsed.instagramUrl = parsed.customerQrUrl;
+        if ((parsed.customerQrMm || 0) < 18) parsed.customerQrMm = 20;
+        setCfg(parsed);
+      }
     } catch {}
     setBtSupported(typeof navigator !== "undefined" && !!(navigator as any).bluetooth);
   }, []);
@@ -165,59 +170,62 @@ function Body() {
         </p>
 
         <div className="border-t border-orange-100 pt-3 space-y-2">
-          <h3 className="font-semibold text-sm">Customer slip QR (Instagram)</h3>
+          <h3 className="font-semibold text-sm">Customer slip QR codes</h3>
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={cfg.customerQrEnabled !== false}
               onChange={(e) => setCfg({ ...cfg, customerQrEnabled: e.target.checked })}
             />
-            Print small QR on <b>customer copy only</b>
+            Print QR row on <b>customer copy only</b> (Insta · WhatsApp · Menu)
           </label>
           <div>
-            <label className="text-xs text-slate-500">Instagram @handle or URL</label>
+            <label className="text-xs text-slate-500">Instagram (@handle or URL)</label>
             <input
               className={input}
-              value={cfg.customerQrUrl || ""}
-              onChange={(e) => setCfg({ ...cfg, customerQrUrl: e.target.value })}
-              placeholder="@yourshop or https://instagram.com/yourshop"
+              value={cfg.instagramUrl || cfg.customerQrUrl || ""}
+              onChange={(e) => setCfg({ ...cfg, instagramUrl: e.target.value })}
+              placeholder="@yourshop"
             />
           </div>
           <div>
-            <label className="text-xs text-slate-500">QR size (mm) — keep small for long orders</label>
+            <label className="text-xs text-slate-500">WhatsApp number</label>
+            <input
+              className={input}
+              value={cfg.whatsappNumber || ""}
+              onChange={(e) => setCfg({ ...cfg, whatsappNumber: e.target.value })}
+              placeholder="9876543210"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500">Menu link (Google Drive / website / PDF)</label>
+            <input
+              className={input}
+              value={cfg.menuUrl || ""}
+              onChange={(e) => setCfg({ ...cfg, menuUrl: e.target.value })}
+              placeholder="https://..."
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500">QR size (12mm is too small to scan)</label>
             <select
               className={input}
-              value={cfg.customerQrMm || 18}
+              value={Math.max(18, cfg.customerQrMm || 20)}
               onChange={(e) => setCfg({ ...cfg, customerQrMm: Number(e.target.value) })}
             >
-              <option value={12}>12 mm (tiniest)</option>
-              <option value={15}>15 mm</option>
-              <option value={18}>18 mm (default)</option>
+              <option value={18}>18 mm (minimum reliable)</option>
+              <option value={20}>20 mm (recommended)</option>
               <option value={22}>22 mm</option>
+              <option value={24}>24 mm</option>
             </select>
           </div>
           <p className="text-xs text-slate-500">
-            QR is generated automatically — you do not need to download an image.
-            Shop/KOT copy stays text-only so 10+ item tickets are less likely to fail.
+            Labels print above each code: <b>Insta</b> · <b>WhatsApp</b> · <b>Menu</b>.
+            Shop/KOT copy stays text-only for long orders.
           </p>
         </div>
 
-
-        <div className="flex gap-2 flex-wrap">
-          <button type="button" className={btn} onClick={save}>
-            Save settings
-          </button>
-          <button type="button" className={btn2} onClick={testPrint}>
-            Test print
-          </button>
-        </div>
-        {msg && <p className="text-sm text-orange-700">{msg}</p>}
-        {!btSupported && cfg.connection === "bluetooth" && (
-          <p className="text-xs text-amber-600">This browser has no Web Bluetooth. Prefer System print.</p>
-        )}
-      </div>
-
-      <div className={`${card} text-xs text-slate-600 space-y-1`}>
+<div className={`${card} text-xs text-slate-600 space-y-1`}>
         <p className="font-semibold text-slate-800">How to not fail</p>
         <p>1. Pair the thermal printer in phone/PC Bluetooth or Wi‑Fi settings.</p>
         <p>2. Choose <b>System print</b> here and save.</p>

@@ -11,12 +11,12 @@ export interface PrinterCfg {
   copies: 1 | 2;
   copy1Label: string;
   copy2Label: string;
-  /** Show QR on customer (first) copy only */
+  /** Customer copy QR row */
   customerQrEnabled: boolean;
-  /** Instagram / WhatsApp / any URL for QR */
-  customerQrUrl: string;
-  /** QR size in mm (keep small for long orders) */
   customerQrMm: number;
+  instagramUrl: string;
+  whatsappNumber: string;
+  menuUrl: string;
 }
 
 const KEY = "pos-printer-cfg";
@@ -32,8 +32,10 @@ export const defaultPrinterCfg: PrinterCfg = {
   copy1Label: "CUSTOMER COPY",
   copy2Label: "SHOP / KOT",
   customerQrEnabled: true,
-  customerQrUrl: "",
-  customerQrMm: 18,
+  customerQrMm: 20,
+  instagramUrl: "",
+  whatsappNumber: "",
+  menuUrl: "",
 };
 
 export function loadPrinterCfg(): PrinterCfg {
@@ -41,9 +43,18 @@ export function loadPrinterCfg(): PrinterCfg {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      const parsed = { ...defaultPrinterCfg, ...JSON.parse(raw) };
+      const parsed: PrinterCfg = { ...defaultPrinterCfg, ...JSON.parse(raw) };
       parsed.copies = Number(parsed.copies) === 1 ? 1 : 2;
-      parsed.customerQrMm = Math.min(28, Math.max(12, Number(parsed.customerQrMm) || 18));
+      // Min 18mm — 12mm rarely scans on thermal
+      let mm = Number(parsed.customerQrMm) || 20;
+      if (mm < 18) mm = 18;
+      if (mm > 28) mm = 28;
+      parsed.customerQrMm = mm;
+      // migrate old single customerQrUrl → instagram
+      const anyParsed = parsed as PrinterCfg & { customerQrUrl?: string };
+      if (!parsed.instagramUrl && anyParsed.customerQrUrl) {
+        parsed.instagramUrl = anyParsed.customerQrUrl;
+      }
       return parsed;
     }
   } catch {}
@@ -78,32 +89,47 @@ function formatOrderTime(orderedAt?: string | Date | null): string {
   });
 }
 
-function normalizeQrUrl(raw: string): string {
+function normalizeInstagram(raw: string): string {
   const v = raw.trim();
   if (!v) return "";
   if (v.startsWith("http://") || v.startsWith("https://")) return v;
   if (v.startsWith("@")) return `https://instagram.com/${v.slice(1)}`;
   if (/instagram\.com/i.test(v)) return v.startsWith("http") ? v : `https://${v}`;
-  // bare handle
   if (/^[A-Za-z0-9._]+$/.test(v)) return `https://instagram.com/${v}`;
   return v;
 }
 
-/** Build tiny QR as data-URL (no external download needed). */
-async function makeQrDataUrl(text: string, px = 96): Promise<string> {
+function normalizeWhatsApp(raw: string): string {
+  const digits = raw.replace(/[^0-9]/g, "");
+  if (digits.length < 10) return "";
+  const full = digits.length === 10 ? `91${digits}` : digits;
+  const text = encodeURIComponent("Hi! I want to order.");
+  return `https://wa.me/${full}?text=${text}`;
+}
+
+function normalizeMenuUrl(raw: string, origin?: string): string {
+  const v = raw.trim();
+  if (!v) return "";
+  if (v.startsWith("http://") || v.startsWith("https://")) return v;
+  if (v.startsWith("/") && origin) return `${origin}${v}`;
+  return v;
+}
+
+async function makeQrDataUrl(text: string, px = 120): Promise<string> {
   try {
     const QR = (await import("qrcode")).default;
     return await QR.toDataURL(text, {
       errorCorrectionLevel: "M",
-      margin: 0,
+      margin: 1,
       width: px,
       color: { dark: "#000000", light: "#ffffff" },
     });
   } catch {
-    // Fallback online API if package missing at runtime
-    return `https://api.qrserver.com/v1/create-qr-code/?size=${px}x${px}&margin=0&data=${encodeURIComponent(text)}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=${px}x${px}&margin=1&data=${encodeURIComponent(text)}`;
   }
 }
+
+type QrCell = { label: string; dataUrl: string };
 
 function buildSlipHtml(
   opts: {
@@ -118,7 +144,7 @@ function buildSlipHtml(
   },
   cfg: PrinterCfg,
   copyLabel: string,
-  qrDataUrl: string | null,
+  qrs: QrCell[],
   isCustomerCopy: boolean
 ): string {
   const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""]
@@ -140,14 +166,20 @@ function buildSlipHtml(
     )
     .join("");
 
-  // QR only on customer copy, compact, after total — avoids eating item space at top
-  const qrMm = cfg.customerQrMm || 18;
+  const qrMm = Math.max(18, cfg.customerQrMm || 20);
   const qrBlock =
-    isCustomerCopy && qrDataUrl
+    isCustomerCopy && qrs.length
       ? `<div class="sep"></div>
-         <div class="qrwrap">
-           <img class="qr" src="${qrDataUrl}" width="${Math.round(qrMm * 3.8)}" height="${Math.round(qrMm * 3.8)}" alt="" />
-           <div class="qrcap">IG</div>
+         <div class="qrrow">
+           ${qrs
+             .map(
+               (q) => `
+             <div class="qrcell">
+               <div class="qrlab">${escapeHtml(q.label)}</div>
+               <img class="qr" src="${q.dataUrl}" alt="" />
+             </div>`
+             )
+             .join("")}
          </div>`
       : "";
 
@@ -170,10 +202,6 @@ function buildSlipHtml(
     </div>`;
 }
 
-/**
- * Print KOT/receipt. Customer copy can include a small Instagram QR at the bottom.
- * Shop copy stays text-only so long orders are safer on thermal paper.
- */
 export async function printOrderReceipt(opts: {
   orderNo: number;
   items: { name: string; qty: number; price: number }[];
@@ -191,24 +219,29 @@ export async function printOrderReceipt(opts: {
   const copies = cfg.copies === 1 ? 1 : 2;
   const label1 = cfg.copy1Label || "CUSTOMER COPY";
   const label2 = cfg.copy2Label || "SHOP / KOT";
+  const qrMm = Math.max(18, cfg.customerQrMm || 20);
 
-  let qrDataUrl: string | null = null;
-  const link = normalizeQrUrl(cfg.customerQrUrl || "");
-  if (cfg.customerQrEnabled && link) {
-    // Small pixel size is enough for 12–20mm print
-    qrDataUrl = await makeQrDataUrl(link, 96);
+  const qrs: QrCell[] = [];
+  if (cfg.customerQrEnabled) {
+    const origin = window.location.origin;
+    const ig = normalizeInstagram(cfg.instagramUrl || "");
+    const wa = normalizeWhatsApp(cfg.whatsappNumber || "");
+    const menu = normalizeMenuUrl(cfg.menuUrl || "", origin);
+    // ~2.5–3 px per mm for decent scan on thermal
+    const px = Math.round(qrMm * 4);
+    if (ig) qrs.push({ label: "Insta", dataUrl: await makeQrDataUrl(ig, px) });
+    if (wa) qrs.push({ label: "WhatsApp", dataUrl: await makeQrDataUrl(wa, px) });
+    if (menu) qrs.push({ label: "Menu", dataUrl: await makeQrDataUrl(menu, px) });
   }
 
   document.getElementById("pos-print-root")?.remove();
 
   const slips: string[] = [];
-  slips.push(buildSlipHtml(opts, cfg, label1, qrDataUrl, true));
+  slips.push(buildSlipHtml(opts, cfg, label1, qrs, true));
   if (copies === 2) {
-    // Shop / KOT: no QR (saves paper & reduces fail risk on long tickets)
-    slips.push(buildSlipHtml(opts, cfg, label2, null, false));
+    slips.push(buildSlipHtml(opts, cfg, label2, [], false));
   }
 
-  const qrMm = cfg.customerQrMm || 18;
   const root = document.createElement("div");
   root.id = "pos-print-root";
   root.innerHTML = `
@@ -230,7 +263,6 @@ export async function printOrderReceipt(opts: {
         text-align: center;
         font-weight: 700;
         font-size: 11px;
-        letter-spacing: 0.04em;
         margin-bottom: 2px;
       }
       #pos-print-root .row {
@@ -256,30 +288,38 @@ export async function printOrderReceipt(opts: {
         font-weight: 700;
         text-align: right;
       }
-      #pos-print-root .qrwrap {
-        text-align: center;
-        margin: 4px 0 0;
+      #pos-print-root .qrrow {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 3mm;
+        margin-top: 2px;
         page-break-inside: avoid;
         break-inside: avoid;
+      }
+      #pos-print-root .qrcell {
+        text-align: center;
+        flex: 0 0 auto;
+      }
+      #pos-print-root .qrlab {
+        font-size: 8px;
+        font-weight: 700;
+        margin-bottom: 1px;
+        letter-spacing: 0.02em;
       }
       #pos-print-root .qr {
         width: ${qrMm}mm;
         height: ${qrMm}mm;
         image-rendering: pixelated;
-      }
-      #pos-print-root .qrcap {
-        font-size: 9px;
-        margin-top: 1px;
+        display: block;
+        margin: 0 auto;
       }
       #pos-print-root .break {
         page-break-after: always;
         break-after: page;
         height: 0;
       }
-      @page {
-        margin: 3mm;
-        size: auto;
-      }
+      @page { margin: 3mm; size: auto; }
       @media print {
         html, body {
           height: auto !important;
@@ -287,9 +327,7 @@ export async function printOrderReceipt(opts: {
           padding: 0 !important;
           background: #fff !important;
         }
-        body > *:not(#pos-print-root) {
-          display: none !important;
-        }
+        body > *:not(#pos-print-root) { display: none !important; }
         #pos-print-root {
           display: block !important;
           position: static !important;
@@ -317,7 +355,6 @@ export async function printOrderReceipt(opts: {
   };
   window.addEventListener("afterprint", cleanup);
 
-  // Wait a tick so QR image is in DOM
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       try {
