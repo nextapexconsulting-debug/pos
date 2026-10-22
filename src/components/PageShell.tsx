@@ -26,6 +26,8 @@ const CRUMBS: Record<string, string> = {
   "/printer": "Printer",
   "/staff": "Staff",
   "/billing": "Billing",
+  "/settings": "Configuration",
+  "/customers": "Customers",
 };
 
 export default function PageShell({

@@ -62,11 +62,15 @@ export default function AuthGate({ children, roles }: { children: ReactNode; rol
 
   if (!access) return (
     <Screen>
-      <div className="text-center px-6">
-        <div className="text-2xl sm:text-3xl font-bold text-orange-500 leading-snug">
-          Let&apos;s Do Some Business
+      <div className="text-center px-6 flex flex-col items-center">
+        <img
+          src="/splash-photo.jpg"
+          alt=""
+          className="w-40 h-56 object-cover rounded-2xl shadow-lg mb-4"
+        />
+        <div className="text-xl sm:text-2xl font-bold text-orange-500 leading-snug">
+          Welcome to POS Solution
         </div>
-        <p className="text-slate-400 text-sm mt-3">Loading…</p>
       </div>
     </Screen>
   );

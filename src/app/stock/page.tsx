@@ -70,6 +70,30 @@ function Body() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.rpc("low_stock_items");
+      const low = (data as any[]) ?? [];
+      if (!low.length) return;
+      const names = low.map((x) => `${x.name}: ${x.remaining}`).join(", ");
+      setMsg(`⚠️ Low stock (≤ threshold): ${names}`);
+      try {
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          new Notification("Low stock", { body: names, icon: "/icon-192.png" });
+        }
+        // Optional Telegram
+        await fetch("/api/send-telegram", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderText: `⚠️ <b>Low stock</b>\n${low.map((x: any) => `• ${x.name}: ${x.remaining} ${x.unit || ""}`).join("\n")}`,
+            orderNumber: 0,
+          }),
+        });
+      } catch {}
+    })();
+  }, []);
+
   const dayPurchaseCost = ins.reduce((s, x) => s + Number(x.total_cost || 0), 0);
 
   const saveClosing = async () => {
@@ -159,10 +183,13 @@ function Body() {
 
       {/* Day sheet */}
       <div className={card}>
-        <h2 className="font-semibold text-sm mb-1">Day sheet</h2>
-        <p className="text-xs text-slate-500 mb-3">
-          <b>Opening</b> = previous day’s closing. Enter <b>Closing</b> at end of day. Used = Opening + New − Closing.
-        </p>
+        <h2 className="font-semibold text-sm mb-1">Today&apos;s stock (easy steps)</h2>
+        <ol className="text-xs text-slate-600 mb-3 list-decimal pl-4 space-y-0.5">
+          <li><b>Opening</b> is yesterday&apos;s remaining (auto).</li>
+          <li>Add <b>New stock</b> below if something arrived (qty + ₹ paid).</li>
+          <li>At close, type what is <b>left</b> in Closing and Save.</li>
+          <li>Remaining carries to tomorrow automatically.</li>
+        </ol>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

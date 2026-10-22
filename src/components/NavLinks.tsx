@@ -19,6 +19,7 @@ export default function NavLinks() {
       : [
           { href: "/orders", label: "Orders" },
           { href: "/orders/edit", label: "Edit Order" },
+          { href: "/customers", label: "Customers" },
           ...(owner
             ? [
                 { href: "/dashboard", label: "Today / Profit" },
@@ -27,6 +28,7 @@ export default function NavLinks() {
                 { href: "/reports", label: "Reports" },
                 { href: "/menu", label: "Add / Edit Product" },
                 { href: "/printer", label: "Printer" },
+                { href: "/settings", label: "Configuration" },
                 { href: "/staff", label: "Staff" },
                 { href: "/billing", label: "Billing" },
               ]
@@ -56,14 +58,16 @@ export default function NavLinks() {
       {pathname !== "/" && (
         <Link
           href="/"
-          className="inline-flex items-center justify-center h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm bg-white text-orange-600 hover:bg-orange-50 font-bold rounded-lg shadow-sm"
+          className="inline-flex items-center justify-center h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm bg-white font-bold rounded-lg shadow-sm"
+          style={{ color: "var(--pos-primary)" }}
         >
           <span className="sm:hidden">+ Order</span>
           <span className="hidden sm:inline">+ New Order</span>
         </Link>
       )}
       <details ref={detailsRef} className="relative">
-        <summary className="list-none cursor-pointer inline-flex items-center justify-center h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm bg-white text-orange-700 hover:bg-orange-50 font-bold rounded-lg border border-orange-100 shadow-sm select-none">
+        <summary className="list-none cursor-pointer inline-flex items-center justify-center h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm bg-white font-bold rounded-lg border border-orange-100 shadow-sm select-none"
+          style={{ color: "var(--pos-primary-dark)" }}>
           ☰ Menu
         </summary>
         <div className="absolute right-0 mt-2 w-52 max-h-[70vh] overflow-y-auto bg-white border border-orange-200 rounded-xl shadow-xl z-30 text-slate-800">
@@ -73,9 +77,14 @@ export default function NavLinks() {
               href={href}
               className={`block px-4 py-2.5 text-sm hover:bg-orange-50 ${
                 pathname === href || (href !== "/" && pathname.startsWith(href + "/"))
-                  ? "bg-orange-50 font-semibold text-orange-700"
+                  ? "bg-orange-50 font-semibold"
                   : "text-slate-800"
               }`}
+              style={
+                pathname === href || (href !== "/" && pathname.startsWith(href + "/"))
+                  ? { color: "var(--pos-primary-dark)" }
+                  : undefined
+              }
               onClick={() => {
                 if (detailsRef.current) detailsRef.current.open = false;
               }}

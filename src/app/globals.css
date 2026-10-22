@@ -1,3 +1,8 @@
+:root {
+  --pos-primary: #f97316;
+  --pos-primary-dark: #ea580c;
+  --pos-soft: #ffedd5;
+}
 @import "tailwindcss";
 
 :root {

@@ -16,7 +16,7 @@ export default function AppHeader({
   breadcrumb?: string;
 }) {
   return (
-    <header className="sticky top-0 z-20 shadow-md bg-orange-500 text-white">
+    <header className="sticky top-0 z-20 shadow-md text-white" style={{ backgroundColor: "var(--pos-primary)" }}>
       <div className="flex items-center gap-2 px-3 sm:px-4 h-12 sm:h-14">
         <h1 className="flex-1 min-w-0 text-base sm:text-lg font-bold truncate leading-tight">
           {title}

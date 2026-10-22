@@ -52,6 +52,11 @@ function Body() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    // Auto rent + electricity daily share (idempotent)
+    supabase.rpc("apply_default_daily_expenses", {}).then(() => load());
+  }, []);
+
   const total = rows.reduce((s, r) => s + Number(r.amount), 0);
   const byCat = Object.entries(
     rows.reduce<Record<string, number>>((m, r) => {

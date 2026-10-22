@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import PwaRegister from "@/components/PwaRegister";
+import ThemeInit from "@/components/ThemeInit";
 
 export const metadata: Metadata = {
   title: "Krishna Voice POS",
@@ -48,6 +49,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         {children}
+        <ThemeInit />
         <PwaRegister />
       </body>
     </html>

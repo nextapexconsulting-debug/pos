@@ -46,6 +46,9 @@ function Body() {
   }, [date]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    supabase.rpc("apply_default_daily_expenses", {}).then(() => load());
+  }, []);
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
