@@ -181,6 +181,47 @@ function Body() {
             Add / update
           </button>
         </div>
+        
+        <button
+          type="button"
+          className={btn2 + " w-full sm:w-auto"}
+          onClick={async () => {
+            if (!itemId) {
+              setMsg("Select stock item (Bread) first");
+              return;
+            }
+            const targets = products.filter((p) => {
+              const name = p.nameEn.toLowerCase();
+              return name.includes("sandwich");
+            });
+            // We need prices — fetch from menu rpc detail
+            const { data: menu } = await supabase.rpc("list_menu_products");
+            const list = (Array.isArray(menu) ? menu : []) as any[];
+            const at100 = list.filter((x) => {
+              const n = String(x.nameEn || x.name_en || "").toLowerCase();
+              return Number(x.price) >= 100 && n.includes("sandwich");
+            });
+            if (!at100.length) {
+              setMsg("No sandwiches with price ≥ ₹100 found");
+              return;
+            }
+            if (!confirm(`Set ${at100.length} sandwich(es) with price ≥ ₹100 → 3 × selected stock each?`)) return;
+            let ok = 0;
+            for (const x of at100) {
+              const code = x.id || x.product_code;
+              const { error } = await supabase.rpc("upsert_product_recipe", {
+                p_code: code,
+                p_item_id: itemId,
+                p_qty: 3,
+              });
+              if (!error) ok++;
+            }
+            setMsg(`Updated ${ok} products: sandwich ≥ ₹100 → 3 slices`);
+            load();
+          }}
+        >
+          Apply: sandwiches ≥ ₹100 → 3 of selected stock
+        </button>
         {msg && <p className="text-xs text-slate-600">{msg}</p>}
       </div>
 

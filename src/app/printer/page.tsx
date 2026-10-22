@@ -36,7 +36,7 @@ function Body() {
   };
 
   const testPrint = async () => {
-    printOrderReceipt({
+    await printOrderReceipt({
       orderNo: 0,
       items: [{ name: "Test item", qty: 1, price: 0 }],
       total: 0,
@@ -163,6 +163,45 @@ function Body() {
         <p className="text-xs text-slate-500">
           Example: 2 copies → first slip &quot;CUSTOMER COPY&quot;, second &quot;SHOP / KOT&quot;. Customer name and mobile print on both when entered on the order.
         </p>
+
+        <div className="border-t border-orange-100 pt-3 space-y-2">
+          <h3 className="font-semibold text-sm">Customer slip QR (Instagram)</h3>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={cfg.customerQrEnabled !== false}
+              onChange={(e) => setCfg({ ...cfg, customerQrEnabled: e.target.checked })}
+            />
+            Print small QR on <b>customer copy only</b>
+          </label>
+          <div>
+            <label className="text-xs text-slate-500">Instagram @handle or URL</label>
+            <input
+              className={input}
+              value={cfg.customerQrUrl || ""}
+              onChange={(e) => setCfg({ ...cfg, customerQrUrl: e.target.value })}
+              placeholder="@yourshop or https://instagram.com/yourshop"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500">QR size (mm) — keep small for long orders</label>
+            <select
+              className={input}
+              value={cfg.customerQrMm || 18}
+              onChange={(e) => setCfg({ ...cfg, customerQrMm: Number(e.target.value) })}
+            >
+              <option value={12}>12 mm (tiniest)</option>
+              <option value={15}>15 mm</option>
+              <option value={18}>18 mm (default)</option>
+              <option value={22}>22 mm</option>
+            </select>
+          </div>
+          <p className="text-xs text-slate-500">
+            QR is generated automatically — you do not need to download an image.
+            Shop/KOT copy stays text-only so 10+ item tickets are less likely to fail.
+          </p>
+        </div>
+
 
         <div className="flex gap-2 flex-wrap">
           <button type="button" className={btn} onClick={save}>

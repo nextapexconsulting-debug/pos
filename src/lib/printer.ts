@@ -8,12 +8,15 @@ export interface PrinterCfg {
   paperWidth: "58" | "80";
   autoPrint: boolean;
   shopHeader: string;
-  /** How many slips per print */
   copies: 1 | 2;
-  /** Label for first copy */
   copy1Label: string;
-  /** Label for second copy (used when copies === 2) */
   copy2Label: string;
+  /** Show QR on customer (first) copy only */
+  customerQrEnabled: boolean;
+  /** Instagram / WhatsApp / any URL for QR */
+  customerQrUrl: string;
+  /** QR size in mm (keep small for long orders) */
+  customerQrMm: number;
 }
 
 const KEY = "pos-printer-cfg";
@@ -28,6 +31,9 @@ export const defaultPrinterCfg: PrinterCfg = {
   copies: 2,
   copy1Label: "CUSTOMER COPY",
   copy2Label: "SHOP / KOT",
+  customerQrEnabled: true,
+  customerQrUrl: "",
+  customerQrMm: 18,
 };
 
 export function loadPrinterCfg(): PrinterCfg {
@@ -36,8 +42,8 @@ export function loadPrinterCfg(): PrinterCfg {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = { ...defaultPrinterCfg, ...JSON.parse(raw) };
-      // normalize copies
       parsed.copies = Number(parsed.copies) === 1 ? 1 : 2;
+      parsed.customerQrMm = Math.min(28, Math.max(12, Number(parsed.customerQrMm) || 18));
       return parsed;
     }
   } catch {}
@@ -72,6 +78,33 @@ function formatOrderTime(orderedAt?: string | Date | null): string {
   });
 }
 
+function normalizeQrUrl(raw: string): string {
+  const v = raw.trim();
+  if (!v) return "";
+  if (v.startsWith("http://") || v.startsWith("https://")) return v;
+  if (v.startsWith("@")) return `https://instagram.com/${v.slice(1)}`;
+  if (/instagram\.com/i.test(v)) return v.startsWith("http") ? v : `https://${v}`;
+  // bare handle
+  if (/^[A-Za-z0-9._]+$/.test(v)) return `https://instagram.com/${v}`;
+  return v;
+}
+
+/** Build tiny QR as data-URL (no external download needed). */
+async function makeQrDataUrl(text: string, px = 96): Promise<string> {
+  try {
+    const QR = (await import("qrcode")).default;
+    return await QR.toDataURL(text, {
+      errorCorrectionLevel: "M",
+      margin: 0,
+      width: px,
+      color: { dark: "#000000", light: "#ffffff" },
+    });
+  } catch {
+    // Fallback online API if package missing at runtime
+    return `https://api.qrserver.com/v1/create-qr-code/?size=${px}x${px}&margin=0&data=${encodeURIComponent(text)}`;
+  }
+}
+
 function buildSlipHtml(
   opts: {
     orderNo: number;
@@ -84,7 +117,9 @@ function buildSlipHtml(
     customerMobile?: string | null;
   },
   cfg: PrinterCfg,
-  copyLabel: string
+  copyLabel: string,
+  qrDataUrl: string | null,
+  isCustomerCopy: boolean
 ): string {
   const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""]
     .filter(Boolean)
@@ -105,6 +140,17 @@ function buildSlipHtml(
     )
     .join("");
 
+  // QR only on customer copy, compact, after total — avoids eating item space at top
+  const qrMm = cfg.customerQrMm || 18;
+  const qrBlock =
+    isCustomerCopy && qrDataUrl
+      ? `<div class="sep"></div>
+         <div class="qrwrap">
+           <img class="qr" src="${qrDataUrl}" width="${Math.round(qrMm * 3.8)}" height="${Math.round(qrMm * 3.8)}" alt="" />
+           <div class="qrcap">IG</div>
+         </div>`
+      : "";
+
   return `
     <div class="sheet">
       <div class="copy">${escapeHtml(copyLabel)}</div>
@@ -118,16 +164,17 @@ function buildSlipHtml(
       ${items}
       <div class="sep"></div>
       <div class="total">TOTAL  ₹${opts.total}</div>
+      ${qrBlock}
       <div class="sep"></div>
       <div style="text-align:center">Thank you</div>
     </div>`;
 }
 
 /**
- * Print KOT/receipt. Copies and labels come from Printer settings.
- * Customer name/mobile printed when provided.
+ * Print KOT/receipt. Customer copy can include a small Instagram QR at the bottom.
+ * Shop copy stays text-only so long orders are safer on thermal paper.
  */
-export function printOrderReceipt(opts: {
+export async function printOrderReceipt(opts: {
   orderNo: number;
   items: { name: string; qty: number; price: number }[];
   total: number;
@@ -145,14 +192,23 @@ export function printOrderReceipt(opts: {
   const label1 = cfg.copy1Label || "CUSTOMER COPY";
   const label2 = cfg.copy2Label || "SHOP / KOT";
 
+  let qrDataUrl: string | null = null;
+  const link = normalizeQrUrl(cfg.customerQrUrl || "");
+  if (cfg.customerQrEnabled && link) {
+    // Small pixel size is enough for 12–20mm print
+    qrDataUrl = await makeQrDataUrl(link, 96);
+  }
+
   document.getElementById("pos-print-root")?.remove();
 
   const slips: string[] = [];
-  slips.push(buildSlipHtml(opts, cfg, label1));
+  slips.push(buildSlipHtml(opts, cfg, label1, qrDataUrl, true));
   if (copies === 2) {
-    slips.push(buildSlipHtml(opts, cfg, label2));
+    // Shop / KOT: no QR (saves paper & reduces fail risk on long tickets)
+    slips.push(buildSlipHtml(opts, cfg, label2, null, false));
   }
 
+  const qrMm = cfg.customerQrMm || 18;
   const root = document.createElement("div");
   root.id = "pos-print-root";
   root.innerHTML = `
@@ -166,7 +222,7 @@ export function printOrderReceipt(opts: {
       #pos-print-root .sheet {
         font-family: ui-monospace, Menlo, Consolas, monospace;
         font-size: 12px;
-        line-height: 1.35;
+        line-height: 1.3;
         color: #000;
         width: ${widthMm}mm;
       }
@@ -175,30 +231,45 @@ export function printOrderReceipt(opts: {
         font-weight: 700;
         font-size: 11px;
         letter-spacing: 0.04em;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
       }
       #pos-print-root .row {
         display: flex;
         justify-content: space-between;
-        gap: 6px;
-        margin: 2px 0;
+        gap: 4px;
+        margin: 1px 0;
         page-break-inside: avoid;
         break-inside: avoid;
       }
       #pos-print-root .sep {
         border-top: 1px dashed #000;
-        margin: 6px 0;
+        margin: 4px 0;
       }
       #pos-print-root .head {
         text-align: center;
         font-weight: 700;
         font-size: 13px;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
       }
       #pos-print-root .total {
         font-size: 14px;
         font-weight: 700;
         text-align: right;
+      }
+      #pos-print-root .qrwrap {
+        text-align: center;
+        margin: 4px 0 0;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      #pos-print-root .qr {
+        width: ${qrMm}mm;
+        height: ${qrMm}mm;
+        image-rendering: pixelated;
+      }
+      #pos-print-root .qrcap {
+        font-size: 9px;
+        margin-top: 1px;
       }
       #pos-print-root .break {
         page-break-after: always;
@@ -206,7 +277,7 @@ export function printOrderReceipt(opts: {
         height: 0;
       }
       @page {
-        margin: 4mm;
+        margin: 3mm;
         size: auto;
       }
       @media print {
@@ -223,7 +294,6 @@ export function printOrderReceipt(opts: {
           display: block !important;
           position: static !important;
           left: auto !important;
-          top: auto !important;
           width: 100% !important;
           margin: 0 !important;
           padding: 0 !important;
@@ -236,10 +306,7 @@ export function printOrderReceipt(opts: {
       }
     </style>
     ${slips
-      .map(
-        (html, i) =>
-          html + (i < slips.length - 1 ? '<div class="break"></div>' : "")
-      )
+      .map((html, i) => html + (i < slips.length - 1 ? '<div class="break"></div>' : ""))
       .join("")}
   `;
   document.body.appendChild(root);
@@ -250,6 +317,7 @@ export function printOrderReceipt(opts: {
   };
   window.addEventListener("afterprint", cleanup);
 
+  // Wait a tick so QR image is in DOM
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       try {

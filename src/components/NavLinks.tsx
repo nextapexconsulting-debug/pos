@@ -30,6 +30,7 @@ export default function NavLinks() {
                 { href: "/menu", label: "Add / Edit Product" },
                 { href: "/printer", label: "Printer" },
                 { href: "/settings", label: "Configuration" },
+                { href: "/marketing", label: "Marketing / QR" },
                 { href: "/staff", label: "Staff" },
                 { href: "/billing", label: "Billing" },
               ]
