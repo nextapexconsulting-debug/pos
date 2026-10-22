@@ -392,6 +392,10 @@ function VoicePOS() {
       })),
       p_is_parcel: false,
       p_is_jain: false,
+      // Always send both customer fields (null when empty) so the database
+      // can only match the 6-argument place_order – no "best candidate" clash.
+      p_customer_name: null,
+      p_customer_mobile: null,
     };
     // Only set true when button was pressed — never leave undefined/null
     if (parcelOn) rpcArgs.p_is_parcel = true;
