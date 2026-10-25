@@ -1,33 +1,43 @@
 export type ThemeId =
-  | "sunset_orange"
-  | "ocean_blue"
-  | "forest_green"
-  | "royal_purple"
-  | "midnight_slate"
-  | "rose_pink";
+  | "saffron_gold"
+  | "emerald_spice"
+  | "royal_maroon"
+  | "copper_bronze"
+  | "deep_teal"
+  | "charcoal_amber";
 
 export const THEMES: {
   id: ThemeId;
   name: string;
-  primary: string; // hex for CSS var
+  primary: string;
   primaryDark: string;
   soft: string;
 }[] = [
-  { id: "sunset_orange", name: "Sunset Orange", primary: "#f97316", primaryDark: "#ea580c", soft: "#ffedd5" },
-  { id: "ocean_blue", name: "Ocean Blue", primary: "#0ea5e9", primaryDark: "#0284c7", soft: "#e0f2fe" },
-  { id: "forest_green", name: "Forest Green", primary: "#16a34a", primaryDark: "#15803d", soft: "#dcfce7" },
-  { id: "royal_purple", name: "Royal Purple", primary: "#9333ea", primaryDark: "#7e22ce", soft: "#f3e8ff" },
-  { id: "midnight_slate", name: "Midnight Slate", primary: "#475569", primaryDark: "#334155", soft: "#e2e8f0" },
-  { id: "rose_pink", name: "Rose Pink", primary: "#e11d48", primaryDark: "#be123c", soft: "#ffe4e6" },
+  { id: "saffron_gold", name: "Saffron Gold", primary: "#c2410c", primaryDark: "#9a3412", soft: "#ffedd5" },
+  { id: "emerald_spice", name: "Emerald Spice", primary: "#047857", primaryDark: "#065f46", soft: "#d1fae5" },
+  { id: "royal_maroon", name: "Royal Maroon", primary: "#9f1239", primaryDark: "#881337", soft: "#ffe4e6" },
+  { id: "copper_bronze", name: "Copper Bronze", primary: "#b45309", primaryDark: "#92400e", soft: "#fef3c7" },
+  { id: "deep_teal", name: "Deep Teal", primary: "#0f766e", primaryDark: "#115e59", soft: "#ccfbf1" },
+  { id: "charcoal_amber", name: "Charcoal Amber", primary: "#d97706", primaryDark: "#1c1917", soft: "#fef3c7" },
 ];
 
 const KEY = "pos-theme";
 
 export function getThemeId(): ThemeId {
-  if (typeof window === "undefined") return "sunset_orange";
+  if (typeof window === "undefined") return "saffron_gold";
   const t = localStorage.getItem(KEY) as ThemeId | null;
   if (t && THEMES.some((x) => x.id === t)) return t;
-  return "sunset_orange";
+  // migrate old ids
+  const legacy: Record<string, ThemeId> = {
+    sunset_orange: "saffron_gold",
+    ocean_blue: "deep_teal",
+    forest_green: "emerald_spice",
+    royal_purple: "royal_maroon",
+    midnight_slate: "charcoal_amber",
+    rose_pink: "copper_bronze",
+  };
+  if (t && legacy[t]) return legacy[t];
+  return "saffron_gold";
 }
 
 export function applyTheme(id: ThemeId) {
@@ -37,6 +47,7 @@ export function applyTheme(id: ThemeId) {
     root.style.setProperty("--pos-primary", theme.primary);
     root.style.setProperty("--pos-primary-dark", theme.primaryDark);
     root.style.setProperty("--pos-soft", theme.soft);
+    root.style.setProperty("--accent", theme.primary);
   }
   if (typeof localStorage !== "undefined") {
     localStorage.setItem(KEY, theme.id);

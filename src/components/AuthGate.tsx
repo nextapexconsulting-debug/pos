@@ -62,14 +62,16 @@ export default function AuthGate({ children, roles }: { children: ReactNode; rol
 
   if (!access) return (
     <Screen>
-      <div className="text-center px-6 flex flex-col items-center">
-        <img
-          src="/splash-photo.jpg"
-          alt=""
-          className="w-40 h-56 object-cover rounded-2xl shadow-lg mb-4"
-        />
-        <div className="text-xl sm:text-2xl font-bold text-orange-500 leading-snug">
-          Welcome to POS Solution
+      <div className="flex items-center justify-center" aria-label="India">
+        {/* Indian flag only — no photo, no text */}
+        <div className="w-28 h-20 rounded-md overflow-hidden shadow-lg border border-white/20 flex flex-col">
+          <div className="flex-1 bg-[#FF9933]" />
+          <div className="flex-1 bg-white flex items-center justify-center">
+            <div className="w-6 h-6 rounded-full border-2 border-[#000080] relative">
+              <div className="absolute inset-0.5 rounded-full border border-[#000080] opacity-80" />
+            </div>
+          </div>
+          <div className="flex-1 bg-[#138808]" />
         </div>
       </div>
     </Screen>

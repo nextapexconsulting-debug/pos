@@ -1,3 +1,4 @@
+import { splitGst, formatGstLines } from "@/lib/gst";
 export type Conn = "none" | "network" | "bluetooth" | "system";
 
 export interface PrinterCfg {
@@ -63,6 +64,14 @@ export function loadPrinterCfg(): PrinterCfg {
 
 export function savePrinterCfg(cfg: PrinterCfg) {
   localStorage.setItem(KEY, JSON.stringify(cfg));
+}
+
+function loadGstCfg() {
+  try {
+    const raw = localStorage.getItem("pos-gst-cfg");
+    if (raw) return JSON.parse(raw) as { gstin?: string; shopState?: string; rate?: number; invoicePrefix?: string };
+  } catch {}
+  return { gstin: "", shopState: "Gujarat", rate: 5, invoicePrefix: "INV" };
 }
 
 function escapeHtml(s: string) {
@@ -141,6 +150,7 @@ function buildSlipHtml(
     orderedAt?: string | Date | null;
     customerName?: string | null;
     customerMobile?: string | null;
+    gstHtml?: string;
   },
   cfg: PrinterCfg,
   copyLabel: string,
@@ -195,7 +205,8 @@ function buildSlipHtml(
       <div class="sep"></div>
       ${items}
       <div class="sep"></div>
-      <div class="total">TOTAL  ₹${opts.total}</div>
+      <div class="total">TOTAL  Rs ${opts.total}</div>
+      ${opts.gstHtml || ""}
       ${qrBlock}
       <div class="sep"></div>
       <div style="text-align:center">Thank you</div>
@@ -221,6 +232,23 @@ export async function printOrderReceipt(opts: {
   const label2 = cfg.copy2Label || "SHOP / KOT";
   const qrMm = Math.max(18, cfg.customerQrMm || 20);
 
+  const gstCfg = loadGstCfg();
+  const gst = splitGst({
+    totalInclusive: opts.total,
+    ratePercent: Number(gstCfg.rate) || 0,
+    shopState: gstCfg.shopState || "Gujarat",
+    customerState: null,
+  });
+  const gstLines = formatGstLines(gst);
+  const gstHtml =
+    gstLines.length > 0
+      ? `<div class="sep"></div>
+         ${gstCfg.gstin ? `<div>GSTIN: ${escapeHtml(gstCfg.gstin)}</div>` : ""}
+         ${gstLines.map((l) => `<div>${escapeHtml(l)}</div>`).join("")}
+         <div class="sep"></div>
+         <div style="font-size:9px;text-align:center">Tax invoice (GST)</div>`
+      : "";
+
   const qrs: QrCell[] = [];
   if (cfg.customerQrEnabled) {
     const origin = window.location.origin;
@@ -237,9 +265,9 @@ export async function printOrderReceipt(opts: {
   document.getElementById("pos-print-root")?.remove();
 
   const slips: string[] = [];
-  slips.push(buildSlipHtml(opts, cfg, label1, qrs, true));
+  slips.push(buildSlipHtml({ ...opts, gstHtml }, cfg, label1, qrs, true));
   if (copies === 2) {
-    slips.push(buildSlipHtml(opts, cfg, label2, [], false));
+    slips.push(buildSlipHtml({ ...opts, gstHtml: "" }, cfg, label2, [], false));
   }
 
   const root = document.createElement("div");

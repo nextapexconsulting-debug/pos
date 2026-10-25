@@ -570,7 +570,7 @@ function VoicePOS() {
         {/* Left: Voice + Products */}
         <section className="flex-1 p-3 flex flex-col gap-3 min-h-0 overflow-hidden">
           {lastOrder && (
-            <div className="bg-orange-50 rounded-xl p-3 border border-orange-200 flex items-center gap-2 shrink-0 flex-wrap">
+            <div className="pos-soft-bg rounded-xl p-3 border pos-border flex items-center gap-2 shrink-0 flex-wrap">
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-slate-800">Order #{lastOrder.no} · ₹{lastOrder.total}</div>
                 <div className="text-xs text-slate-500">
@@ -579,7 +579,7 @@ function VoicePOS() {
               </div>
               {!lastOrder.paid && (
                 <>
-                  <button type="button" onClick={() => markPaid("cash")} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">💵 Cash</button>
+                  <button type="button" onClick={() => markPaid("cash")} className="pos-btn text-white text-sm font-semibold px-3 py-2 rounded-lg">💵 Cash</button>
                   <button type="button" onClick={() => markPaid("upi")} className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-3 py-2 rounded-lg">📱 UPI</button>
                 </>
               )}
@@ -597,7 +597,7 @@ function VoicePOS() {
                     customerMobile: lastOrder.customerMobile,
                   })
                 }
-                className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-3 py-2 rounded-lg"
+                className="pos-btn text-white text-sm font-semibold px-3 py-2 rounded-lg"
               >
                 🖨 Print
               </button>
@@ -606,7 +606,7 @@ function VoicePOS() {
           )}
 
           {/* Mic Control */}
-          <div className="bg-orange-50 rounded-xl p-3 flex items-center gap-4 border border-orange-200 shrink-0">
+          <div className="pos-soft-bg rounded-xl p-3 flex items-center gap-4 border pos-border shrink-0">
             <button
               type="button"
               onClick={(e) => {
@@ -617,8 +617,8 @@ function VoicePOS() {
               disabled={!isSupported}
               className={`relative w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all shrink-0 touch-manipulation ${
                 isListening
-                  ? "mic-active mic-pulse bg-orange-500 text-white"
-                  : "bg-white border-2 border-orange-400 text-orange-600 hover:bg-orange-100"
+                  ? "mic-active mic-pulse pos-soft-bg0 text-white"
+                  : "bg-white border-2 pos-border pos-text hover:bg-orange-100"
               } ${!isSupported ? "opacity-50 cursor-not-allowed" : ""}`}
               aria-label={isListening ? "Stop listening" : "Start voice"}
             >
@@ -627,7 +627,7 @@ function VoicePOS() {
             <div className="flex-1 min-w-0">
               <p
                 className={`text-sm font-medium truncate ${
-                  isListening ? "text-orange-600" : "text-slate-500"
+                  isListening ? "pos-text" : "text-slate-500"
                 }`}
               >
                 {status}
@@ -639,7 +639,7 @@ function VoicePOS() {
                 </p>
               )}
               {lastAdded && (
-                <p className="text-xs text-orange-600 truncate">✓ {lastAdded}</p>
+                <p className="text-xs pos-text truncate">✓ {lastAdded}</p>
               )}
               {error && <p className="text-xs text-red-500 truncate">{error}</p>}
             </div>
@@ -648,12 +648,12 @@ function VoicePOS() {
           {/* Search + Price Tabs + Products */}
           
           {/* Review order + customer — above menu */}
-          <div className="bg-white rounded-xl border border-orange-200 p-3 shadow-sm shrink-0 space-y-2">
+          <div className="bg-white rounded-xl border pos-border p-3 shadow-sm shrink-0 space-y-2">
             <div className="text-sm font-semibold text-slate-800">Review order</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input
                 type="text"
-                className="bg-white border border-orange-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-orange-500"
+                className="bg-white border pos-border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:pos-border0"
                 placeholder="Customer name (optional)"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
@@ -661,7 +661,7 @@ function VoicePOS() {
               <input
                 type="tel"
                 inputMode="numeric"
-                className="bg-white border border-orange-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-orange-500"
+                className="bg-white border pos-border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:pos-border0"
                 placeholder="Mobile number (optional)"
                 value={customerMobile}
                 onChange={(e) => setCustomerMobile(e.target.value)}
@@ -673,9 +673,9 @@ function VoicePOS() {
               </p>
             )}
             {order.length === 0 ? (
-              <p className="text-xs text-slate-400">Add items from the menu below</p>
+              <p className="text-xs text-slate-400 md:hidden">Add items from the menu below</p>
             ) : (
-              <ul className="text-sm max-h-28 overflow-y-auto divide-y divide-orange-50">
+              <ul className="text-sm max-h-28 overflow-y-auto divide-y divide-[var(--pos-soft)] md:hidden">
                 {order.map((item) => (
                   <li key={item.product.id} className="py-1.5 flex items-center gap-2">
                     <span className="flex-1 min-w-0 truncate">
@@ -685,7 +685,7 @@ function VoicePOS() {
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         type="button"
-                        className="w-7 h-7 rounded-lg bg-orange-50 text-orange-700 font-bold"
+                        className="w-7 h-7 rounded-lg pos-soft-bg pos-text-dark font-bold"
                         onClick={() => {
                           setOrder((prev) =>
                             prev
@@ -703,7 +703,7 @@ function VoicePOS() {
                       <span className="w-6 text-center tabular-nums font-semibold">{item.quantity}</span>
                       <button
                         type="button"
-                        className="w-7 h-7 rounded-lg bg-orange-50 text-orange-700 font-bold"
+                        className="w-7 h-7 rounded-lg pos-soft-bg pos-text-dark font-bold"
                         onClick={() => {
                           setOrder((prev) =>
                             prev.map((x) =>
@@ -717,7 +717,7 @@ function VoicePOS() {
                         +
                       </button>
                     </div>
-                    <span className="w-14 text-right tabular-nums text-orange-600 font-semibold shrink-0">
+                    <span className="w-14 text-right tabular-nums pos-text font-semibold shrink-0">
                       ₹{item.product.price * item.quantity}
                     </span>
                   </li>
@@ -725,16 +725,16 @@ function VoicePOS() {
               </ul>
             )}
             {order.length > 0 && (
-              <div className="flex items-center justify-between pt-1 border-t border-orange-100">
+              <div className="flex items-center justify-between pt-1 border-t pos-border md:hidden">
                 <span className="text-sm font-semibold">Total</span>
-                <span className="text-lg font-bold text-orange-600">₹{calculateTotal(order)}</span>
+                <span className="text-lg font-bold pos-text">₹{calculateTotal(order)}</span>
               </div>
             )}
           </div>
 
-<div className="bg-white rounded-xl border border-orange-200 flex flex-col flex-1 min-h-0 overflow-hidden shadow-sm">
+<div className="bg-white rounded-xl border pos-border flex flex-col flex-1 min-h-0 overflow-hidden shadow-sm">
             {/* Search bar */}
-            <div className="p-2 border-b border-orange-100 shrink-0 bg-orange-50">
+            <div className="p-2 border-b pos-border shrink-0 pos-soft-bg">
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
                 <input
@@ -742,7 +742,7 @@ function VoicePOS() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search product (English / Gujarati)..."
-                  className="w-full bg-white border border-orange-200 rounded-xl pl-9 pr-9 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+                  className="w-full bg-white border pos-border rounded-xl pl-9 pr-9 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:pos-border0 focus:ring-2 focus:ring-orange-200"
                   enterKeyHint="search"
                   autoComplete="off"
                   autoCorrect="off"
@@ -751,7 +751,7 @@ function VoicePOS() {
                   <button
                     type="button"
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-orange-100 text-orange-600 text-xs font-bold"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-orange-100 pos-text text-xs font-bold"
                     aria-label="Clear search"
                   >
                     ✕
@@ -759,15 +759,15 @@ function VoicePOS() {
                 )}
               </div>
             </div>
-            <div className="flex gap-1 p-2 border-b border-orange-100 overflow-x-auto shrink-0 bg-orange-50">
+            <div className="flex gap-1 p-2 border-b pos-border overflow-x-auto shrink-0 pos-soft-bg">
               {PRICE_TABS.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setPriceTab(tab.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                     priceTab === tab.id
-                      ? "bg-orange-500 text-white"
-                      : "bg-white text-slate-600 hover:bg-orange-100 border border-orange-200"
+                      ? "pos-soft-bg0 text-white"
+                      : "bg-white text-slate-600 hover:bg-orange-100 border pos-border"
                   }`}
                 >
                   {tab.label}
@@ -788,7 +788,7 @@ function VoicePOS() {
                     <button
                       key={p.id}
                       onClick={() => addProductManually(p.id)}
-                      className="bg-white hover:bg-orange-50 active:bg-orange-100 border border-orange-200 rounded-xl px-3 py-3 text-left transition-colors shadow-sm"
+                      className="bg-white hover:pos-soft-bg active:bg-orange-100 border pos-border rounded-xl px-3 py-3 text-left transition-colors shadow-sm"
                     >
                       <div className="text-sm font-medium leading-tight text-slate-800">
                         {p.nameEn}
@@ -796,7 +796,7 @@ function VoicePOS() {
                       <div className="text-xs text-slate-500 truncate mt-0.5">
                         {p.nameGu}
                       </div>
-                      <div className="text-orange-600 text-sm font-bold mt-1">
+                      <div className="pos-text text-sm font-bold mt-1">
                         ₹{p.price}
                       </div>
                     </button>
@@ -808,8 +808,8 @@ function VoicePOS() {
         </section>
 
         {/* Right: Current Order – sticky on mobile via fixed bottom bar */}
-        <section className="hidden md:flex w-full md:w-96 bg-orange-50 border-t md:border-t-0 md:border-l border-orange-200 flex-col max-h-[50vh] md:max-h-none">
-          <div className="p-3 border-b border-orange-200 flex items-center gap-2 shrink-0 bg-white">
+        <section className="hidden md:flex w-full md:w-96 pos-soft-bg border-t md:border-t-0 md:border-l pos-border flex-col max-h-[50vh] md:max-h-none">
+          <div className="p-3 border-b pos-border flex items-center gap-2 shrink-0 bg-white">
             <h2 className="font-semibold flex-1 text-slate-800">Current Order</h2>
             {order.length > 0 && (
               <button
@@ -822,21 +822,21 @@ function VoicePOS() {
             <button
               onClick={confirmOrder}
               disabled={order.length === 0 || isSending}
-              className="bg-orange-500 hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
+              className="pos-soft-bg0 hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
             >
               {isSending ? "Sending..." : "Okay"}
             </button>
           </div>
 
           {/* P / J toggles */}
-          <div className="px-3 py-2 flex gap-2 border-b border-orange-100 bg-white">
+          <div className="px-3 py-2 flex gap-2 border-b pos-border bg-white">
             <button
               type="button"
               onClick={() => setIsParcel((v) => !v)}
               className={`flex-1 text-xs font-bold py-2 rounded-lg border transition-colors ${
                 isParcel
-                  ? "bg-orange-500 text-white border-orange-500"
-                  : "bg-white text-slate-600 border-orange-200 hover:bg-orange-50"
+                  ? "pos-soft-bg0 text-white pos-border0"
+                  : "bg-white text-slate-600 pos-border hover:pos-soft-bg"
               }`}
             >
               {isParcel ? "📦 P ✓ Parcel" : "P"}
@@ -847,7 +847,7 @@ function VoicePOS() {
               className={`flex-1 text-xs font-bold py-2 rounded-lg border transition-colors ${
                 isJain
                   ? "bg-green-600 text-white border-green-600"
-                  : "bg-white text-slate-600 border-orange-200 hover:bg-orange-50"
+                  : "bg-white text-slate-600 pos-border hover:pos-soft-bg"
               }`}
             >
               {isJain ? "🥗 J ✓ Jain" : "J"}
@@ -865,7 +865,7 @@ function VoicePOS() {
               order.map((item) => (
                 <div
                   key={item.product.id}
-                  className="bg-white rounded-xl p-2.5 flex items-center gap-2 border border-orange-200 shadow-sm"
+                  className="bg-white rounded-xl p-2.5 flex items-center gap-2 border pos-border shadow-sm"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm truncate text-slate-800">
@@ -879,7 +879,7 @@ function VoicePOS() {
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => updateQuantity(item.product.id, -1)}
-                      className="w-7 h-7 rounded-full bg-orange-100 hover:bg-orange-200 text-orange-700 flex items-center justify-center text-base"
+                      className="w-7 h-7 rounded-full bg-orange-100 hover:bg-orange-200 pos-text-dark flex items-center justify-center text-base"
                     >
                       −
                     </button>
@@ -888,14 +888,14 @@ function VoicePOS() {
                     </span>
                     <button
                       onClick={() => updateQuantity(item.product.id, 1)}
-                      className="w-7 h-7 rounded-full bg-orange-100 hover:bg-orange-200 text-orange-700 flex items-center justify-center text-base"
+                      className="w-7 h-7 rounded-full bg-orange-100 hover:bg-orange-200 pos-text-dark flex items-center justify-center text-base"
                     >
                       +
                     </button>
                   </div>
 
                   <div className="text-right min-w-[48px]">
-                    <div className="font-semibold text-orange-600 text-sm">
+                    <div className="font-semibold pos-text text-sm">
                       ₹{item.product.price * item.quantity}
                     </div>
                     <button
@@ -910,9 +910,9 @@ function VoicePOS() {
             )}
           </div>
 
-          <div className="p-3 border-t border-orange-200 bg-white flex items-center justify-between shrink-0">
+          <div className="p-3 border-t pos-border bg-white flex items-center justify-between shrink-0">
             <span className="text-slate-600 font-medium">Total</span>
-            <span className="font-bold text-xl text-orange-600">₹{total}</span>
+            <span className="font-bold text-xl pos-text">₹{total}</span>
           </div>
         </section>
       </main>
@@ -920,7 +920,7 @@ function VoicePOS() {
       {/* Mobile bottom sheet – collapsed: chips + Okay; expanded: full list with +/- */}
       <div
         ref={sheetRef}
-        className={`md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t-2 border-orange-400 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] transition-[max-height] duration-300 ease-out flex flex-col ${
+        className={`md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t-2 pos-border shadow-[0_-4px_20px_rgba(0,0,0,0.12)] transition-[max-height] duration-300 ease-out flex flex-col ${
           sheetExpanded ? "max-h-[75vh]" : "max-h-[42vh]"
         }`}
       >
@@ -945,8 +945,8 @@ function VoicePOS() {
             onClick={() => setIsParcel((v) => !v)}
             className={`flex-1 text-xs font-bold py-1.5 rounded-lg border ${
               isParcel
-                ? "bg-orange-500 text-white border-orange-500"
-                : "bg-white text-slate-600 border-orange-200"
+                ? "pos-soft-bg0 text-white pos-border0"
+                : "bg-white text-slate-600 pos-border"
             }`}
           >
             📦 P
@@ -957,7 +957,7 @@ function VoicePOS() {
             className={`flex-1 text-xs font-bold py-1.5 rounded-lg border ${
               isJain
                 ? "bg-green-600 text-white border-green-600"
-                : "bg-white text-slate-600 border-orange-200"
+                : "bg-white text-slate-600 pos-border"
             }`}
           >
             🥗 J
@@ -973,7 +973,7 @@ function VoicePOS() {
             {order.map((i) => (
               <span
                 key={i.product.id}
-                className="shrink-0 bg-orange-50 border border-orange-200 rounded-full px-2 py-0.5"
+                className="shrink-0 pos-soft-bg border pos-border rounded-full px-2 py-0.5"
               >
                 {i.quantity}× {i.product.nameEn}
               </span>
@@ -990,7 +990,7 @@ function VoicePOS() {
               order.map((item) => (
                 <div
                   key={item.product.id}
-                  className="bg-orange-50 rounded-xl p-2.5 flex items-center gap-2 border border-orange-200"
+                  className="pos-soft-bg rounded-xl p-2.5 flex items-center gap-2 border pos-border"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm truncate text-slate-800">
@@ -1003,7 +1003,7 @@ function VoicePOS() {
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => updateQuantity(item.product.id, -1)}
-                      className="w-8 h-8 rounded-full bg-white border border-orange-300 text-orange-700 flex items-center justify-center text-lg font-bold active:bg-orange-100"
+                      className="w-8 h-8 rounded-full bg-white border border-orange-300 pos-text-dark flex items-center justify-center text-lg font-bold active:bg-orange-100"
                     >
                       −
                     </button>
@@ -1012,13 +1012,13 @@ function VoicePOS() {
                     </span>
                     <button
                       onClick={() => updateQuantity(item.product.id, 1)}
-                      className="w-8 h-8 rounded-full bg-white border border-orange-300 text-orange-700 flex items-center justify-center text-lg font-bold active:bg-orange-100"
+                      className="w-8 h-8 rounded-full bg-white border border-orange-300 pos-text-dark flex items-center justify-center text-lg font-bold active:bg-orange-100"
                     >
                       +
                     </button>
                   </div>
                   <div className="text-right min-w-[44px]">
-                    <div className="font-semibold text-orange-600 text-sm">
+                    <div className="font-semibold pos-text text-sm">
                       ₹{item.product.price * item.quantity}
                     </div>
                     <button
@@ -1035,13 +1035,13 @@ function VoicePOS() {
         )}
 
         {/* Always-visible footer: total + Okay */}
-        <div className="flex items-center gap-2 p-3 border-t border-orange-100 shrink-0 bg-white">
+        <div className="flex items-center gap-2 p-3 border-t pos-border shrink-0 bg-white">
           <div className="flex-1" onClick={() => setSheetExpanded((v) => !v)}>
             <div className="text-xs text-slate-500">
               {order.length} item{order.length === 1 ? "" : "s"}
               {!sheetExpanded && order.length > 0 ? " · tap to edit" : ""}
             </div>
-            <div className="text-lg font-bold text-orange-600">₹{total}</div>
+            <div className="text-lg font-bold pos-text">₹{total}</div>
           </div>
           {order.length > 0 && (
             <button onClick={clearOrder} className="text-xs text-red-500 px-2 py-2">
@@ -1051,7 +1051,7 @@ function VoicePOS() {
           <button
             onClick={confirmOrder}
             disabled={order.length === 0 || isSending}
-            className="bg-orange-500 hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-base px-6 py-3 rounded-xl transition-colors shadow-md"
+            className="pos-soft-bg0 hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-base px-6 py-3 rounded-xl transition-colors shadow-md"
           >
             {isSending ? "..." : "Okay"}
           </button>

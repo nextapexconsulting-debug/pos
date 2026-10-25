@@ -59,3 +59,32 @@ body {
   background: #ea580c !important;
   box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.3);
 }
+
+/* Theme-driven components — all buttons/surfaces follow --pos-primary */
+.pos-btn {
+  background-color: var(--pos-primary);
+}
+.pos-btn:hover:not(:disabled) {
+  background-color: var(--pos-primary-dark);
+}
+.pos-card {
+  border-color: color-mix(in srgb, var(--pos-primary) 28%, white);
+}
+.pos-input {
+  border-color: color-mix(in srgb, var(--pos-primary) 28%, white);
+}
+.pos-input:focus {
+  border-color: var(--pos-primary);
+}
+.pos-soft-bg {
+  background-color: var(--pos-soft);
+}
+.pos-border {
+  border-color: color-mix(in srgb, var(--pos-primary) 35%, white);
+}
+.pos-text {
+  color: var(--pos-primary);
+}
+.pos-text-dark {
+  color: var(--pos-primary-dark);
+}

@@ -15,11 +15,15 @@ export default function SettingsPage() {
 }
 
 function Body() {
-  const [theme, setTheme] = useState<ThemeId>("sunset_orange");
+  const [theme, setTheme] = useState<ThemeId>("saffron_gold");
   const [notify, setNotify] = useState(true);
   const [rent, setRent] = useState("25000");
   const [elec, setElec] = useState("5000");
   const [lowStock, setLowStock] = useState("2");
+  const [gstin, setGstin] = useState("");
+  const [shopState, setShopState] = useState("Gujarat");
+  const [gstRate, setGstRate] = useState("5");
+  const [invoicePrefix, setInvoicePrefix] = useState("INV");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -36,6 +40,10 @@ function Body() {
         setRent(String(data.rent_monthly ?? 25000));
         setElec(String(data.electricity_monthly ?? 5000));
         setLowStock(String(data.low_stock_threshold ?? 2));
+        setGstin(data.gstin || "");
+        setShopState(data.shop_state || "Gujarat");
+        setGstRate(String(data.gst_rate ?? 5));
+        setInvoicePrefix(data.invoice_prefix || "INV");
       }
     })();
   }, []);
@@ -60,12 +68,27 @@ function Body() {
       rent_monthly: Number(rent) || 0,
       electricity_monthly: Number(elec) || 0,
       low_stock_threshold: Number(lowStock) || 2,
+      gstin: gstin.trim() || null,
+      shop_state: shopState.trim() || "Gujarat",
+      gst_rate: Number(gstRate) || 5,
+      invoice_prefix: invoicePrefix.trim() || "INV",
       updated_at: new Date().toISOString(),
     });
     setBusy(false);
     if (error) setMsg(error.message);
     else {
       applyTheme(theme);
+      try {
+        localStorage.setItem(
+          "pos-gst-cfg",
+          JSON.stringify({
+            gstin: gstin.trim(),
+            shopState: shopState.trim() || "Gujarat",
+            rate: Number(gstRate) || 0,
+            invoicePrefix: invoicePrefix.trim() || "INV",
+          })
+        );
+      } catch {}
       setMsg("Saved");
       // Request browser notification permission if notify on
       if (notify && typeof Notification !== "undefined" && Notification.permission === "default") {
@@ -150,6 +173,36 @@ function Body() {
           <input className={input} type="number" min="0" step="0.1" value={lowStock} onChange={(e) => setLowStock(e.target.value)} />
         </div>
         <p className="text-xs text-slate-500">Checked on Stock page and can notify via Telegram when you open Stock.</p>
+      </div>
+
+      <div className={`${card} space-y-3`}>
+        <h2 className="font-semibold">GST / Tax invoice</h2>
+        <p className="text-xs text-slate-500">
+          Same state (Gujarat): CGST + SGST. Other state: IGST. Prices treated as GST-inclusive.
+        </p>
+        <div>
+          <label className="text-xs text-slate-500">GSTIN</label>
+          <input className={input} value={gstin} onChange={(e) => setGstin(e.target.value)} placeholder="24XXXXXXXXXX1Z5" />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs text-slate-500">Shop state</label>
+            <input className={input} value={shopState} onChange={(e) => setShopState(e.target.value)} placeholder="Gujarat" />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500">GST rate %</label>
+            <select className={input} value={gstRate} onChange={(e) => setGstRate(e.target.value)}>
+              <option value="0">0% (no GST line)</option>
+              <option value="5">5% (typical food)</option>
+              <option value="12">12%</option>
+              <option value="18">18%</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-slate-500">Invoice prefix</label>
+          <input className={input} value={invoicePrefix} onChange={(e) => setInvoicePrefix(e.target.value)} placeholder="INV" />
+        </div>
       </div>
 
       <button type="button" className={btn + " w-full"} disabled={busy} onClick={save}>

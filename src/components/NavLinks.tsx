@@ -71,18 +71,18 @@ export default function NavLinks() {
         </Link>
       )}
       <details ref={detailsRef} className="relative">
-        <summary className="list-none cursor-pointer inline-flex items-center justify-center h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm bg-white font-bold rounded-lg border border-orange-100 shadow-sm select-none"
+        <summary className="list-none cursor-pointer inline-flex items-center justify-center h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm bg-white font-bold rounded-lg border pos-border shadow-sm select-none"
           style={{ color: "var(--pos-primary-dark)" }}>
           ☰ Menu
         </summary>
-        <div className="absolute right-0 mt-2 w-52 max-h-[70vh] overflow-y-auto bg-white border border-orange-200 rounded-xl shadow-xl z-30 text-slate-800">
+        <div className="absolute right-0 mt-2 w-52 max-h-[70vh] overflow-y-auto bg-white border pos-border rounded-xl shadow-xl z-30 text-slate-800">
           {links.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className={`block px-4 py-2.5 text-sm hover:bg-orange-50 ${
+              className={`block px-4 py-2.5 text-sm hover:pos-soft-bg ${
                 pathname === href || (href !== "/" && pathname.startsWith(href + "/"))
-                  ? "bg-orange-50 font-semibold"
+                  ? "pos-soft-bg font-semibold"
                   : "text-slate-800"
               }`}
               style={
@@ -100,7 +100,7 @@ export default function NavLinks() {
           <button
             type="button"
             onClick={logout}
-            className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-orange-50 border-t border-orange-100"
+            className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:pos-soft-bg border-t pos-border"
           >
             Log out
           </button>

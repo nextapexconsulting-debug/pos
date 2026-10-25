@@ -5,13 +5,13 @@ import { usePathname } from "next/navigation";
 import AuthGate from "./AuthGate";
 import AppHeader from "./AppHeader";
 
-export const card = "bg-white border border-orange-200 rounded-xl p-3 shadow-sm";
+export const card = "bg-white border rounded-xl p-3 shadow-sm pos-card";
 export const input =
-  "bg-white border border-orange-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-orange-500 text-slate-800";
+  "bg-white border rounded-lg px-3 py-2 text-sm w-full focus:outline-none text-slate-800 pos-input";
 export const btn =
-  "bg-orange-500 hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors";
+  "pos-btn disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors";
 export const btn2 =
-  "bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1.5 rounded-lg font-medium";
+  "pos-btn text-white text-sm px-3 py-1.5 rounded-lg font-medium";
 
 const CRUMBS: Record<string, string> = {
   "/": "New Order",
@@ -77,7 +77,7 @@ export function Table({
     <div className="overflow-x-auto -mx-1">
       <table className="w-full text-sm min-w-[280px]">
         <thead>
-          <tr className="text-slate-500 text-xs border-b border-orange-200">
+          <tr className="text-slate-500 text-xs border-b border-[var(--pos-soft)]">
             {cols.map((c) => (
               <th
                 key={c.key}
@@ -90,7 +90,7 @@ export function Table({
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} className="border-b border-orange-50">
+            <tr key={i} className="border-b border-[var(--pos-soft)]">
               {cols.map((c) => (
                 <td
                   key={c.key}
@@ -102,7 +102,7 @@ export function Table({
             </tr>
           ))}
           {totals && (
-            <tr className="font-semibold bg-orange-50">
+            <tr className="font-semibold bg-[var(--pos-soft)]">
               {cols.map((c, i) => (
                 <td
                   key={c.key}
