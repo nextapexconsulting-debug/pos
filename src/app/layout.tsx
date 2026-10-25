@@ -4,14 +4,14 @@ import PwaRegister from "@/components/PwaRegister";
 import ThemeInit from "@/components/ThemeInit";
 
 export const metadata: Metadata = {
-  title: "Krishna Voice POS",
+  title: "GenZPOS",
   description: "Order booking POS – voice & tap. Install on phone for full-screen use.",
-  applicationName: "Voice POS",
+  applicationName: "GenZPOS",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Voice POS",
+    title: "GenZPOS",
   },
   formatDetection: {
     telephone: false,

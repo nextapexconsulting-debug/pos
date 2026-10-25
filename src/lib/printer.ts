@@ -32,7 +32,7 @@ export const defaultPrinterCfg: PrinterCfg = {
   networkPort: "9100",
   paperWidth: "58",
   autoPrint: false,
-  shopHeader: "Krishna Sandwich - Pizza",
+  shopHeader: "Shop",
   copies: 2,
   copy1Label: "CUSTOMER COPY",
   copy2Label: "SHOP / KOT",
