@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import PageShell, { card, input, btn2 } from "@/components/PageShell";
 import { useAccess } from "@/components/AuthGate";
-import { supabase, todayIST, inr } from "@/lib/supabase";
+import { supabase, todayIST, fetchBusinessDay, inr } from "@/lib/supabase";
 import { printOrderReceipt } from "@/lib/printer";
 import Link from "next/link";
 
@@ -27,6 +27,10 @@ function Orders() {
   const me = useAccess();
   const owner = me.role === "owner";
   const [date, setDate] = useState(todayIST());
+  useEffect(() => {
+    fetchBusinessDay().then((d) => setDate(d));
+  }, []);
+
   const [filter, setFilter] = useState<"all" | "unpaid">("all");
   const [orders, setOrders] = useState<Order[]>([]);
   const [err, setErr] = useState("");

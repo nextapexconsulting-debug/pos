@@ -62,3 +62,13 @@ export function downloadCSV(filename: string, rows: Record<string, unknown>[]) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+
+/** Business day from DB (shop timings). Falls back to local IST date. */
+export async function fetchBusinessDay(): Promise<string> {
+  try {
+    const { data, error } = await supabase.rpc("get_shop_timings");
+    if (!error && data?.business_day) return String(data.business_day).slice(0, 10);
+  } catch {}
+  return todayIST();
+}

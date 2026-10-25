@@ -24,6 +24,9 @@ function Body() {
   const [shopState, setShopState] = useState("Gujarat");
   const [gstRate, setGstRate] = useState("5");
   const [invoicePrefix, setInvoicePrefix] = useState("INV");
+  const [dayStart, setDayStart] = useState("14:00");
+  const [dayEnd, setDayEnd] = useState("09:00");
+  const [bizDay, setBizDay] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -44,6 +47,14 @@ function Body() {
         setShopState(data.shop_state || "Gujarat");
         setGstRate(String(data.gst_rate ?? 5));
         setInvoicePrefix(data.invoice_prefix || "INV");
+        if (data.day_start_time) setDayStart(String(data.day_start_time).slice(0, 5));
+        if (data.day_end_time) setDayEnd(String(data.day_end_time).slice(0, 5));
+      }
+      const { data: tim } = await supabase.rpc("get_shop_timings");
+      if (tim) {
+        if (tim.day_start_time) setDayStart(String(tim.day_start_time).slice(0, 5));
+        if (tim.day_end_time) setDayEnd(String(tim.day_end_time).slice(0, 5));
+        if (tim.business_day) setBizDay(String(tim.business_day).slice(0, 10));
       }
     })();
   }, []);
@@ -72,7 +83,14 @@ function Body() {
       shop_state: shopState.trim() || "Gujarat",
       gst_rate: Number(gstRate) || 5,
       invoice_prefix: invoicePrefix.trim() || "INV",
+      day_start_time: dayStart.length === 5 ? dayStart + ":00" : dayStart,
+      day_end_time: dayEnd.length === 5 ? dayEnd + ":00" : dayEnd,
       updated_at: new Date().toISOString(),
+    });
+    // Also via RPC so function cache is consistent
+    await supabase.rpc("set_shop_timings", {
+      p_start: dayStart.length === 5 ? dayStart + ":00" : dayStart,
+      p_end: dayEnd.length === 5 ? dayEnd + ":00" : dayEnd,
     });
     setBusy(false);
     if (error) setMsg(error.message);
@@ -173,6 +191,44 @@ function Body() {
           <input className={input} type="number" min="0" step="0.1" value={lowStock} onChange={(e) => setLowStock(e.target.value)} />
         </div>
         <p className="text-xs text-slate-500">Checked on Stock page and can notify via Telegram when you open Stock.</p>
+      </div>
+
+      <div className={`${card} space-y-3`}>
+        <h2 className="font-semibold">Shop timings (business day)</h2>
+        <p className="text-xs text-slate-500">
+          Stored in database for this shop. Orders, profit, stock and reports use this day —
+          not midnight and not this device clock alone.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs text-slate-500">Day starts (IST)</label>
+            <input
+              type="time"
+              className={input}
+              value={dayStart}
+              onChange={(e) => setDayStart(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500">Typical close (IST)</label>
+            <input
+              type="time"
+              className={input}
+              value={dayEnd}
+              onChange={(e) => setDayEnd(e.target.value)}
+            />
+          </div>
+        </div>
+        <p className="text-xs text-slate-600">
+          Example: start <b>14:00</b>, close <b>09:00</b> → sales after 2 PM until next day 2 PM
+          count as one business day.
+          {bizDay ? (
+            <>
+              {" "}
+              Current business day: <b>{bizDay}</b>
+            </>
+          ) : null}
+        </p>
       </div>
 
       <div className={`${card} space-y-3`}>

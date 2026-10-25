@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import PageShell, { card, input, btn, Table } from "@/components/PageShell";
-import { supabase, todayIST, addDays, inr } from "@/lib/supabase";
+import { supabase, todayIST, fetchBusinessDay, addDays, inr } from "@/lib/supabase";
 import { buildShiftSummaryMessage } from "@/lib/shiftSummary";
 
 interface Day { day: string; orders: number; items: number; sales: number; cash: number; upi: number; unpaid: number; expenses: number; profit: number }
@@ -20,6 +20,7 @@ export default function Dashboard() {
 
 function Body() {
   const [date, setDate] = useState(todayIST());
+  useEffect(() => { fetchBusinessDay().then(setDate); }, []);
   const [d, setD] = useState<Day | null>(null);
   const [week, setWeek] = useState<Day[]>([]);
   const [exps, setExps] = useState<Exp[]>([]);
