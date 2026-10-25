@@ -38,7 +38,7 @@ function Redirect() {
       <div className="space-y-3">
         <p className="text-sm text-slate-600">Opening Instagram…</p>
         <a
-          className="text-orange-600 font-semibold text-sm underline"
+          className="pos-text font-semibold text-sm underline"
           href={`https://www.instagram.com/${encodeURIComponent(raw)}/`}
         >
           Open profile in browser

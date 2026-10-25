@@ -39,7 +39,7 @@ function Redirect() {
       <div className="space-y-3">
         <p className="text-sm text-slate-600">Opening WhatsApp…</p>
         <a
-          className="text-orange-600 font-semibold text-sm underline"
+          className="pos-text font-semibold text-sm underline"
           href={`https://wa.me/${n}?text=${encodeURIComponent(text)}`}
         >
           Open WhatsApp in browser

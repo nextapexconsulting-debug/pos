@@ -97,7 +97,7 @@ function Orders() {
               <span className="text-xs text-red-500">Cancelled</span>
             ) : o.payment_status === "paid" ? (
               <>
-                <span className={`text-xs px-2 py-1 rounded-full ${o.payment_method === "cash" ? "bg-orange-100 text-orange-700" : "bg-indigo-100 text-indigo-700"}`}>
+                <span className={`text-xs px-2 py-1 rounded-full ${o.payment_method === "cash" ? "pos-soft-bg pos-text-dark" : "bg-indigo-100 text-indigo-700"}`}>
                   Paid · {o.payment_method?.toUpperCase()}
                 </span>
                 {owner && <button className="text-xs text-slate-400 underline" onClick={() => act("set_payment", { p_order: o.id, p_method: null })}>undo</button>}

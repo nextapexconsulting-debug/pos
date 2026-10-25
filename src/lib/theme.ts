@@ -48,6 +48,7 @@ export function applyTheme(id: ThemeId) {
     root.style.setProperty("--pos-primary-dark", theme.primaryDark);
     root.style.setProperty("--pos-soft", theme.soft);
     root.style.setProperty("--accent", theme.primary);
+    root.dataset.theme = theme.id;
   }
   if (typeof localStorage !== "undefined") {
     localStorage.setItem(KEY, theme.id);

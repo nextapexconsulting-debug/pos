@@ -64,7 +64,7 @@ function Body() {
           <Link
             key={r.customer_id}
             href={`/customers/${r.customer_id}`}
-            className={`${card} block hover:border-orange-400 transition-colors`}
+            className={`${card} block hover:pos-border transition-colors`}
           >
             <div className="flex items-center gap-2">
               <div className="flex-1 min-w-0">
@@ -72,7 +72,7 @@ function Body() {
                 <div className="text-xs text-slate-500">{r.mobile}</div>
               </div>
               <div className="text-right shrink-0">
-                <div className="font-bold text-orange-600">{inr(r.total)}</div>
+                <div className="font-bold pos-text">{inr(r.total)}</div>
                 <div className="text-[11px] text-slate-500">{r.orders} orders</div>
               </div>
             </div>

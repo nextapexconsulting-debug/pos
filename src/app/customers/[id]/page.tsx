@@ -55,7 +55,7 @@ function Body() {
 
   return (
     <>
-      <Link href="/customers" className="text-sm text-orange-600">
+      <Link href="/customers" className="text-sm pos-text">
         ← All customers
       </Link>
       {err && <p className="text-red-500 text-sm">{err}</p>}
@@ -81,7 +81,7 @@ function Body() {
                   timeZone: "Asia/Kolkata",
                 })}
               </span>
-              <span className="ml-auto font-bold text-orange-600">{inr(o.total)}</span>
+              <span className="ml-auto font-bold pos-text">{inr(o.total)}</span>
             </div>
             <div className="text-xs text-slate-600 mt-1">
               {(o.order_items || []).map((i: any) => `${i.qty}× ${i.name_en}`).join(", ")}

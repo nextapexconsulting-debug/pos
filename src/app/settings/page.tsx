@@ -211,7 +211,7 @@ function Body() {
       {msg && <p className="text-sm text-center text-slate-600">{msg}</p>}
 
       <div className={`${card} text-sm space-y-2`}>
-        <Link href="/customers" className="block text-orange-600 font-medium">
+        <Link href="/customers" className="block pos-text font-medium">
           → Customer report
         </Link>
         <p className="text-xs text-slate-500">

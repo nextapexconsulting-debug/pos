@@ -210,7 +210,7 @@ function EditOrder() {
         </button>
       </div>
       {err && <p className="text-red-500 text-sm">{err}</p>}
-      {msg && <p className="text-sm text-orange-700 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">{msg}</p>}
+      {msg && <p className="text-sm pos-text-dark pos-soft-bg border pos-border rounded-lg px-3 py-2">{msg}</p>}
 
       {!selected ? (
         <>
@@ -220,12 +220,12 @@ function EditOrder() {
             <button
               key={o.id}
               onClick={() => selectOrder(o)}
-              className={`${card} w-full text-left hover:border-orange-400 transition-colors`}
+              className={`${card} w-full text-left hover:pos-border transition-colors`}
             >
               <div className="flex items-center gap-2">
                 <span className="font-bold">#{o.order_no}</span>
                 {(o.is_parcel === true || o.is_jain === true) && (
-                  <span className="text-xs font-bold text-orange-600">
+                  <span className="text-xs font-bold pos-text">
                     [{[o.is_parcel === true ? "P" : null, o.is_jain === true ? "J" : null].filter(Boolean).join("")}]
                   </span>
                 )}
@@ -237,7 +237,7 @@ function EditOrder() {
                     timeZone: "Asia/Kolkata",
                   })}
                 </span>
-                <span className="ml-auto font-bold text-orange-600">{inr(o.total)}</span>
+                <span className="ml-auto font-bold pos-text">{inr(o.total)}</span>
               </div>
               <div className="text-xs text-slate-500 mt-1">
                 {o.order_items.map((i) => `${i.qty}× ${i.name_en}`).join(", ")}
@@ -259,7 +259,7 @@ function EditOrder() {
               type="button"
               onClick={() => setIsParcel((v) => !v)}
               className={`flex-1 text-sm font-bold py-2 rounded-lg border ${
-                isParcel ? "bg-orange-500 text-white border-orange-500" : "bg-white text-slate-600 border-orange-200"
+                isParcel ? "pos-btn text-white border-[var(--pos-primary)]" : "bg-white text-slate-600 pos-border"
               }`}
             >
               📦 P · Parcel
@@ -268,7 +268,7 @@ function EditOrder() {
               type="button"
               onClick={() => setIsJain((v) => !v)}
               className={`flex-1 text-sm font-bold py-2 rounded-lg border ${
-                isJain ? "bg-green-600 text-white border-green-600" : "bg-white text-slate-600 border-orange-200"
+                isJain ? "bg-green-600 text-white border-green-600" : "bg-white text-slate-600 pos-border"
               }`}
             >
               🥗 J · Jain
@@ -277,7 +277,7 @@ function EditOrder() {
 
           <div className={`${card} space-y-2`}>
             {items.map((item, idx) => (
-              <div key={idx} className="flex items-center gap-2 border-b border-orange-50 pb-2 last:border-0">
+              <div key={idx} className="flex items-center gap-2 border-b border-[var(--pos-soft)] pb-2 last:border-0">
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm truncate">{item.name_en}</div>
                   <div className="text-xs text-slate-500">₹{item.price} each</div>
@@ -285,19 +285,19 @@ function EditOrder() {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => updateQty(idx, -1)}
-                    className="w-7 h-7 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center"
+                    className="w-7 h-7 rounded-full pos-soft-bg pos-text-dark flex items-center justify-center"
                   >
                     −
                   </button>
                   <span className="w-6 text-center font-semibold text-sm">{item.qty}</span>
                   <button
                     onClick={() => updateQty(idx, 1)}
-                    className="w-7 h-7 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center"
+                    className="w-7 h-7 rounded-full pos-soft-bg pos-text-dark flex items-center justify-center"
                   >
                     +
                   </button>
                 </div>
-                <div className="text-orange-600 font-semibold text-sm min-w-[48px] text-right">
+                <div className="pos-text font-semibold text-sm min-w-[48px] text-right">
                   ₹{item.price * item.qty}
                 </div>
                 <button onClick={() => removeItem(idx)} className="text-xs text-red-500">
@@ -330,7 +330,7 @@ function EditOrder() {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-lg font-bold text-orange-600">Total: ₹{total}</span>
+            <span className="text-lg font-bold pos-text">Total: ₹{total}</span>
             <button className={btn} onClick={save} disabled={busy || items.length === 0}>
               {busy ? "Saving…" : "Save changes"}
             </button>

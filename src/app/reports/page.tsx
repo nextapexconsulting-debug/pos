@@ -502,7 +502,7 @@ function Body() {
             </button>
           ))}
         </div>
-        {pdfBusy && <p className="text-xs text-orange-600">Preparing PDF…</p>}
+        {pdfBusy && <p className="text-xs pos-text">Preparing PDF…</p>}
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
@@ -513,8 +513,8 @@ function Body() {
             onClick={() => setId(r.id)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap border transition-colors ${
               id === r.id
-                ? "bg-orange-500 text-white border-orange-500"
-                : "bg-white text-slate-700 border-orange-200 hover:bg-orange-50"
+                ? "pos-btn text-white border-transparent"
+                : "bg-white text-slate-700 pos-border hover:pos-soft-bg"
             }`}
           >
             {r.label}

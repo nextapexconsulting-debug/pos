@@ -184,10 +184,10 @@ function MenuManager() {
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
-      <header className="bg-orange-500 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-md">
+      <header className="pos-btn text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-md">
         <div>
           <h1 className="text-xl font-bold">Add / Edit Product</h1>
-          <p className="text-xs text-orange-100">Products for this shop</p>
+          <p className="text-xs text-white/80">Products for this shop</p>
         </div>
         <div className="flex items-center gap-2">
           <NavLinks />
@@ -198,12 +198,12 @@ function MenuManager() {
       <main className="max-w-3xl mx-auto p-4 space-y-6">
         <Link
           href="/menu/import"
-          className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl py-3 font-semibold"
+          className="flex items-center justify-center gap-2 pos-btn hover:opacity-90 text-white rounded-xl py-3 font-semibold"
         >
           📷 Upload menu photo (add or replace all items)
         </Link>
         {message && (
-          <div className="bg-orange-50 border border-orange-300 text-orange-800 px-4 py-2 rounded-lg text-sm">
+          <div className="pos-soft-bg border pos-border pos-text-dark px-4 py-2 rounded-lg text-sm">
             {message}
           </div>
         )}
@@ -211,7 +211,7 @@ function MenuManager() {
           <p className="text-sm text-slate-400 text-center">Loading shop menu…</p>
         )}
 
-        <section className="bg-white rounded-2xl p-5 border border-orange-200 space-y-4 shadow-sm">
+        <section className="bg-white rounded-2xl p-5 border pos-border space-y-4 shadow-sm">
           <h2 className="font-semibold text-lg text-slate-800">Add New Product</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -222,7 +222,7 @@ function MenuManager() {
                 value={form.nameEn}
                 onChange={(e) => setForm((f) => ({ ...f, nameEn: e.target.value }))}
                 placeholder="e.g. Butter Slice"
-                className="w-full bg-white border border-orange-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
+                className="w-full bg-white border pos-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--pos-primary)]"
               />
             </div>
             <div>
@@ -232,7 +232,7 @@ function MenuManager() {
                 value={form.nameGu}
                 onChange={(e) => setForm((f) => ({ ...f, nameGu: e.target.value }))}
                 placeholder="e.g. બટર સ્લાઇસ"
-                className="w-full bg-white border border-orange-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
+                className="w-full bg-white border pos-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--pos-primary)]"
               />
             </div>
             <div>
@@ -244,7 +244,7 @@ function MenuManager() {
                 value={form.price}
                 onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
                 placeholder="e.g. 30"
-                className="w-full bg-white border border-orange-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
+                className="w-full bg-white border pos-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--pos-primary)]"
               />
             </div>
             <div>
@@ -254,7 +254,7 @@ function MenuManager() {
                 value={form.keywords}
                 onChange={(e) => setForm((f) => ({ ...f, keywords: e.target.value }))}
                 placeholder="Auto-generated if empty"
-                className="w-full bg-white border border-orange-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
+                className="w-full bg-white border pos-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--pos-primary)]"
               />
             </div>
           </div>
@@ -262,14 +262,14 @@ function MenuManager() {
           <button
             onClick={handleSave}
             disabled={busy}
-            className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white px-5 py-2.5 rounded-lg font-medium text-sm"
+            className="pos-btn hover:opacity-90 disabled:opacity-50 text-white px-5 py-2.5 rounded-lg font-medium text-sm"
           >
             {busy ? "Saving…" : "Add Product"}
           </button>
         </section>
 
-        <section className="bg-white rounded-2xl border border-orange-200 overflow-hidden shadow-sm">
-          <div className="px-5 py-3 border-b border-orange-100 flex items-center justify-between bg-orange-50">
+        <section className="bg-white rounded-2xl border pos-border overflow-hidden shadow-sm">
+          <div className="px-5 py-3 border-b pos-border flex items-center justify-between pos-soft-bg">
             <h2 className="font-semibold text-slate-800">
               Shop Menu ({products.length} items)
             </h2>
@@ -285,33 +285,33 @@ function MenuManager() {
           {products.length === 0 && !loading ? (
             <p className="p-6 text-slate-400 text-center">No products yet</p>
           ) : (
-            <ul className="divide-y divide-orange-100">
+            <ul className="divide-y divide-[var(--pos-soft)]">
               {products.map((p) => (
                 <li key={p.id} className="px-4 py-3">
                   {inlineEdit?.id === p.id ? (
                     <div className="space-y-2">
                       <div className="grid grid-cols-2 gap-2">
                         <input
-                          className="bg-white border border-orange-300 rounded-lg px-2 py-1.5 text-sm"
+                          className="bg-white border pos-border rounded-lg px-2 py-1.5 text-sm"
                           value={inlineEdit.nameEn}
                           onChange={(e) => setInlineEdit({ ...inlineEdit, nameEn: e.target.value })}
                           placeholder="English"
                         />
                         <input
-                          className="bg-white border border-orange-300 rounded-lg px-2 py-1.5 text-sm"
+                          className="bg-white border pos-border rounded-lg px-2 py-1.5 text-sm"
                           value={inlineEdit.nameGu}
                           onChange={(e) => setInlineEdit({ ...inlineEdit, nameGu: e.target.value })}
                           placeholder="Gujarati"
                         />
                         <input
                           type="number"
-                          className="bg-white border border-orange-300 rounded-lg px-2 py-1.5 text-sm"
+                          className="bg-white border pos-border rounded-lg px-2 py-1.5 text-sm"
                           value={inlineEdit.price}
                           onChange={(e) => setInlineEdit({ ...inlineEdit, price: e.target.value })}
                           placeholder="Price"
                         />
                         <input
-                          className="bg-white border border-orange-300 rounded-lg px-2 py-1.5 text-sm"
+                          className="bg-white border pos-border rounded-lg px-2 py-1.5 text-sm"
                           value={inlineEdit.keywords}
                           onChange={(e) => setInlineEdit({ ...inlineEdit, keywords: e.target.value })}
                           placeholder="Keywords"
@@ -321,7 +321,7 @@ function MenuManager() {
                         <button
                           onClick={saveInlineEdit}
                           disabled={busy}
-                          className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-4 py-1.5 rounded-lg"
+                          className="pos-btn hover:opacity-90 text-white text-xs font-semibold px-4 py-1.5 rounded-lg"
                         >
                           Save
                         </button>
@@ -342,10 +342,10 @@ function MenuManager() {
                           Keywords: {p.keywords.join(", ")}
                         </div>
                       </div>
-                      <div className="text-orange-600 font-bold text-sm shrink-0">₹{p.price}</div>
+                      <div className="pos-text font-bold text-sm shrink-0">₹{p.price}</div>
                       <button
                         onClick={() => startInlineEdit(p)}
-                        className="text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 px-3 py-1.5 rounded-lg shrink-0"
+                        className="text-xs pos-soft-bg hover:pos-soft-bg pos-text-dark border pos-border px-3 py-1.5 rounded-lg shrink-0"
                       >
                         Edit
                       </button>

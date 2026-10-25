@@ -233,7 +233,7 @@ function Body() {
         {Object.entries(byProduct).map(([pc, lines]) => {
           const pname = products.find((p) => p.id === pc)?.nameEn || pc;
           return (
-            <div key={pc} className="border border-orange-100 rounded-lg p-2">
+            <div key={pc} className="border pos-border rounded-lg p-2">
               <div className="font-medium text-sm mb-1">{pname}</div>
               <ul className="text-xs space-y-1">
                 {lines.map((r) => (
@@ -276,7 +276,7 @@ function Body() {
               </thead>
               <tbody>
                 {check.map((r, i) => (
-                  <tr key={i} className="border-b border-orange-50">
+                  <tr key={i} className="border-b border-[var(--pos-soft)]">
                     <td className="py-1.5">
                       {r.item_name}
                       {r.packs_theo != null && (

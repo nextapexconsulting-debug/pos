@@ -167,7 +167,7 @@ function Body() {
         </button>
       </div>
 
-      {msg && <p className="text-sm text-orange-700 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">{msg}</p>}
+      {msg && <p className="text-sm pos-text-dark pos-soft-bg border pos-border rounded-lg px-3 py-2">{msg}</p>}
 
       {/* Summary strip */}
       <div className={`${card} grid grid-cols-2 gap-2 text-center`}>
@@ -193,7 +193,7 @@ function Body() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-xs text-slate-500 border-b border-orange-200">
+              <tr className="text-xs text-slate-500 border-b pos-border">
                 <th className="text-left py-2 px-1">Item</th>
                 <th className="text-right px-1">Opening</th>
                 <th className="text-right px-1">+ New</th>
@@ -216,13 +216,13 @@ function Body() {
                     ? null
                     : Number(r.opening) + Number(r.stock_in) - Number(cl);
                 return (
-                  <tr key={r.item_id} className="border-b border-orange-50">
+                  <tr key={r.item_id} className="border-b border-[var(--pos-soft)]">
                     <td className="py-2 px-1 font-medium">
                       {r.name}{" "}
                       <span className="text-xs text-slate-400">({r.unit})</span>
                     </td>
                     <td className="text-right px-1 tabular-nums text-slate-600">{r.opening}</td>
-                    <td className="text-right px-1 tabular-nums text-orange-600">
+                    <td className="text-right px-1 tabular-nums pos-text">
                       {Number(r.stock_in) ? `+${r.stock_in}` : "—"}
                     </td>
                     <td className="text-right px-1">
@@ -278,7 +278,7 @@ function Body() {
       {ins.length > 0 && (
         <div className={card}>
           <h2 className="font-semibold text-sm mb-2">Purchases this day</h2>
-          <ul className="divide-y divide-orange-50 text-sm">
+          <ul className="divide-y divide-[var(--pos-soft)] text-sm">
             {ins.map((x) => (
               <li key={x.id} className="py-2 flex items-center gap-2">
                 <div className="flex-1">

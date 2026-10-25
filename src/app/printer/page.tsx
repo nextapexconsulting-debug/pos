@@ -197,7 +197,7 @@ function Body() {
           </div>
         </div>
 
-        <div className="border-t border-orange-100 pt-3 space-y-2">
+        <div className="border-t pos-border pt-3 space-y-2">
           <h3 className="font-semibold text-sm">Customer slip QR codes</h3>
           <label className="flex items-center gap-2 text-sm">
             <input

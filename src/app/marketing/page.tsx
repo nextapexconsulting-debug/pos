@@ -120,7 +120,7 @@ function Body() {
           <div className={`${card} text-center space-y-2`}>
             <div className="font-semibold text-sm">Instagram</div>
             <img src={qrUrl(igLink)} alt="Instagram QR" className="mx-auto w-40 h-40 bg-white" />
-            <a href={igLink} target="_blank" rel="noreferrer" className="text-xs text-orange-600 break-all">
+            <a href={igLink} target="_blank" rel="noreferrer" className="text-xs pos-text break-all">
               {igLink}
             </a>
             <a href={qrUrl(igLink, 400)} download="instagram-qr.png" className={btn2 + " inline-block"}>
@@ -154,7 +154,7 @@ function Body() {
         <div className={`${card} space-y-2`}>
           <h2 className="font-semibold text-sm">New order requests (from QR form)</h2>
           {requests.map((r) => (
-            <div key={r.id} className="border border-orange-100 rounded-lg p-2 text-xs">
+            <div key={r.id} className="border pos-border rounded-lg p-2 text-xs">
               <div className="font-medium">
                 {r.customer_name || "Customer"} · {r.customer_mobile}
               </div>
@@ -164,7 +164,7 @@ function Body() {
               </div>
               <button
                 type="button"
-                className="text-orange-600 mt-1 font-medium"
+                className="pos-text mt-1 font-medium"
                 onClick={async () => {
                   await supabase.from("order_requests").update({ status: "done" }).eq("id", r.id);
                   setRequests((prev) => prev.filter((x) => x.id !== r.id));

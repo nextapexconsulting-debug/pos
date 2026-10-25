@@ -128,14 +128,14 @@ function Body() {
 
   return (
     <>
-      <a href="/expenses" className="block text-center bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl py-3">
+      <a href="/expenses" className="block text-center pos-btn hover:opacity-90 text-white font-semibold rounded-xl py-3">
         Open Expenses (add / edit costs)
       </a>
       <button
         type="button"
         disabled={busy}
         onClick={sendShiftSummary}
-        className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-slate-200 text-white font-semibold rounded-xl py-3"
+        className="w-full pos-btn hover:opacity-90 disabled:bg-slate-200 text-white font-semibold rounded-xl py-3"
       >
         🏁 Send shift summary to Telegram
       </button>
@@ -168,7 +168,7 @@ function Body() {
         <p className="text-[11px] text-slate-500">Spread over days: 1 = whole amount counts today · 5 = bread that lasts 5 days · 30 = monthly salary.</p>
         <div className="flex gap-1.5 flex-wrap">
           {PRESETS.map((p) => (
-            <button type="button" key={p} onClick={() => setCat(p)} className="text-xs bg-orange-500 hover:bg-orange-600 text-white px-2.5 py-1 rounded-full">{p}</button>
+            <button type="button" key={p} onClick={() => setCat(p)} className="text-xs pos-btn hover:opacity-90 text-white px-2.5 py-1 rounded-full">{p}</button>
           ))}
         </div>
         <button className={btn} disabled={busy}>{busy ? "Saving…" : "Add & deduct from income"}</button>
