@@ -1,0 +1,99 @@
+:root {
+  --pos-primary: #f97316;
+  --pos-primary-dark: #ea580c;
+  --pos-soft: #ffedd5;
+}
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --accent: var(--pos-primary);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scrollbars follow active theme (page + menu + panels) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--pos-primary) var(--pos-soft);
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: var(--pos-soft);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--pos-primary);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--pos-primary-dark);
+}
+
+/* Pulse animation for mic – orange */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.mic-pulse::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 9999px;
+  background: var(--pos-primary);
+  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  z-index: -1;
+}
+
+.mic-active {
+  background: var(--pos-primary-dark) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--pos-primary) 35%, transparent);
+}
+
+/* Theme-driven components — all buttons/surfaces follow --pos-primary */
+.pos-btn {
+  background-color: var(--pos-primary);
+}
+.pos-btn:hover:not(:disabled) {
+  background-color: var(--pos-primary-dark);
+}
+.pos-card {
+  border-color: color-mix(in srgb, var(--pos-primary) 28%, white);
+}
+.pos-input {
+  border-color: color-mix(in srgb, var(--pos-primary) 28%, white);
+}
+.pos-input:focus {
+  border-color: var(--pos-primary);
+}
+.pos-soft-bg {
+  background-color: var(--pos-soft);
+}
+.pos-border {
+  border-color: color-mix(in srgb, var(--pos-primary) 35%, white);
+}
+.pos-text {
+  color: var(--pos-primary);
+}
+.pos-text-dark {
+  color: var(--pos-primary-dark);
+}
