@@ -18,6 +18,10 @@ export interface PrinterCfg {
   instagramUrl: string;
   whatsappNumber: string;
   menuUrl: string;
+  /** Print tax invoice (prices + GST) */
+  printInvoice: boolean;
+  /** Print kitchen KOT (items only, no prices/GST/QR) */
+  printKot: boolean;
 }
 
 const KEY = "pos-printer-cfg";
@@ -37,6 +41,8 @@ export const defaultPrinterCfg: PrinterCfg = {
   instagramUrl: "",
   whatsappNumber: "",
   menuUrl: "",
+  printInvoice: true,
+  printKot: true,
 };
 
 export function loadPrinterCfg(): PrinterCfg {
@@ -213,6 +219,45 @@ function buildSlipHtml(
     </div>`;
 }
 
+
+/** Kitchen ticket — items + qty only, no prices, GST, or QR */
+function buildKotHtml(
+  opts: {
+    orderNo: number;
+    items: { name: string; qty: number; price: number }[];
+    total: number;
+    parcel?: boolean;
+    jain?: boolean;
+    orderedAt?: string | Date | null;
+    customerName?: string | null;
+    customerMobile?: string | null;
+  },
+  cfg: PrinterCfg,
+  copyLabel: string
+): string {
+  const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""]
+    .filter(Boolean)
+    .join(" · ");
+  const name = (opts.customerName || "").trim();
+  const items = opts.items
+    .map((i) => `<div class="row"><span><b>${i.qty}×</b> ${escapeHtml(i.name)}</span></div>`)
+    .join("");
+  return `
+    <div class="sheet">
+      <div class="copy">${escapeHtml(copyLabel)}</div>
+      <div class="head">${escapeHtml(cfg.shopHeader)}</div>
+      <div class="sep"></div>
+      <div><b>Order #${opts.orderNo || "—"}</b></div>
+      <div>${formatOrderTime(opts.orderedAt)}</div>
+      ${flags ? `<div><b>${flags}</b></div>` : ""}
+      ${name ? `<div>${escapeHtml(name)}</div>` : ""}
+      <div class="sep"></div>
+      ${items}
+      <div class="sep"></div>
+      <div style="text-align:center;font-size:11px">${opts.items.reduce((s, i) => s + i.qty, 0)} items</div>
+    </div>`;
+}
+
 export async function printOrderReceipt(opts: {
   orderNo: number;
   items: { name: string; qty: number; price: number }[];
@@ -264,10 +309,29 @@ export async function printOrderReceipt(opts: {
 
   document.getElementById("pos-print-root")?.remove();
 
+  const wantInvoice = cfg.printInvoice !== false;
+  const wantKot = cfg.printKot !== false;
+  // Backward compat: if both unset somehow, use copies
   const slips: string[] = [];
-  slips.push(buildSlipHtml({ ...opts, gstHtml }, cfg, label1, qrs, true));
-  if (copies === 2) {
-    slips.push(buildSlipHtml({ ...opts, gstHtml: "" }, cfg, label2, [], false));
+  if (wantInvoice) {
+    slips.push(
+      buildSlipHtml(
+        { ...opts, gstHtml },
+        cfg,
+        cfg.copy1Label || "TAX INVOICE",
+        qrs,
+        true
+      )
+    );
+  }
+  if (wantKot) {
+    slips.push(
+      buildKotHtml(opts, cfg, cfg.copy2Label || "KOT / KITCHEN")
+    );
+  }
+  if (!slips.length) {
+    // fallback one invoice
+    slips.push(buildSlipHtml({ ...opts, gstHtml }, cfg, "RECEIPT", qrs, true));
   }
 
   const root = document.createElement("div");

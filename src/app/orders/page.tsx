@@ -56,7 +56,7 @@ function Orders() {
     <>
       <div className={`${card} grid grid-cols-2 sm:grid-cols-4 gap-2 text-center`}>
         <Stat label="Total sales" v={sum(() => true)} c="text-slate-800" />
-        <Stat label="Cash" v={sum((o) => o.payment_method === "cash")} c="text-orange-600" />
+        <Stat label="Cash" v={sum((o) => o.payment_method === "cash")} c="pos-text" />
         <Stat label="UPI" v={sum((o) => o.payment_method === "upi")} c="text-indigo-600" />
         <Stat label="Not paid yet" v={sum((o) => o.payment_status === "unpaid")} c="text-amber-600" />
       </div>
@@ -67,7 +67,7 @@ function Orders() {
         ) : (
           <span className="text-sm text-slate-500">Today</span>
         )}
-        <button className={btn2 + (filter === "all" ? " !bg-orange-500 !text-white" : "")} onClick={() => setFilter("all")}>All</button>
+        <button className={btn2 + (filter === "all" ? " !pos-btn !text-white" : "")} onClick={() => setFilter("all")}>All</button>
         <button className={btn2 + (filter === "unpaid" ? " !bg-amber-500 !text-white" : "")} onClick={() => setFilter("unpaid")}>Unpaid only</button>
         <Link href="/orders/edit" className={btn2 + " ml-auto"}>✏️ Edit Order</Link>
         <button className={btn2} onClick={load}>↻ Refresh</button>
@@ -80,14 +80,14 @@ function Orders() {
           <div className="flex items-center gap-2">
             <span className="font-bold">#{o.order_no}</span>
             {(o.is_parcel === true || o.is_jain === true) && (
-              <span className="text-xs font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">
+              <span className="text-xs font-bold pos-text pos-soft-bg px-1.5 py-0.5 rounded">
                 {[o.is_parcel === true ? "P" : null, o.is_jain === true ? "J" : null].filter(Boolean).join("")}
               </span>
             )}
             <span className="text-xs text-slate-400">
               {new Date(o.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })}
             </span>
-            <span className="ml-auto font-bold text-orange-600">{inr(o.total)}</span>
+            <span className="ml-auto font-bold pos-text">{inr(o.total)}</span>
           </div>
           <div className="text-xs text-slate-600 mt-1">
             {o.order_items.map((i) => `${i.qty}× ${i.name_en}`).join(", ")}
@@ -105,13 +105,13 @@ function Orders() {
             ) : (
               <>
                 <span className="text-xs text-amber-600">Unpaid</span>
-                <button className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg" onClick={() => act("set_payment", { p_order: o.id, p_method: "cash" })}>💵 Paid Cash</button>
+                <button className="pos-btn hover:opacity-90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg" onClick={() => act("set_payment", { p_order: o.id, p_method: "cash" })}>💵 Paid Cash</button>
                 <button className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg" onClick={() => act("set_payment", { p_order: o.id, p_method: "upi" })}>📱 Paid UPI</button>
               </>
             )}
             <button
               type="button"
-              className="text-xs bg-orange-500 hover:bg-orange-600 text-white font-semibold px-3 py-1.5 rounded-lg ml-auto"
+              className="text-xs pos-btn hover:opacity-90 text-white font-semibold px-3 py-1.5 rounded-lg ml-auto"
               onClick={() =>
                 printOrderReceipt({
                   orderNo: o.order_no,

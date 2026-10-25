@@ -617,8 +617,8 @@ function VoicePOS() {
               disabled={!isSupported}
               className={`relative w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all shrink-0 touch-manipulation ${
                 isListening
-                  ? "mic-active mic-pulse pos-soft-bg0 text-white"
-                  : "bg-white border-2 pos-border pos-text hover:bg-orange-100"
+                  ? "mic-active mic-pulse pos-btn text-white"
+                  : "bg-white border-2 pos-border pos-text hover:pos-soft-bg"
               } ${!isSupported ? "opacity-50 cursor-not-allowed" : ""}`}
               aria-label={isListening ? "Stop listening" : "Start voice"}
             >
@@ -647,13 +647,13 @@ function VoicePOS() {
 
           {/* Search + Price Tabs + Products */}
           
-          {/* Review order + customer — above menu */}
+          {/* Customer only — order items live in bottom sheet (mobile) / right panel (desktop) */}
           <div className="bg-white rounded-xl border pos-border p-3 shadow-sm shrink-0 space-y-2">
-            <div className="text-sm font-semibold text-slate-800">Review order</div>
+            <div className="text-sm font-semibold text-slate-800">Customer</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input
                 type="text"
-                className="bg-white border pos-border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:pos-border0"
+                className="bg-white border pos-border rounded-lg px-3 py-2 text-sm w-full focus:outline-none"
                 placeholder="Customer name (optional)"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
@@ -661,7 +661,7 @@ function VoicePOS() {
               <input
                 type="tel"
                 inputMode="numeric"
-                className="bg-white border pos-border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:pos-border0"
+                className="bg-white border pos-border rounded-lg px-3 py-2 text-sm w-full focus:outline-none"
                 placeholder="Mobile number (optional)"
                 value={customerMobile}
                 onChange={(e) => setCustomerMobile(e.target.value)}
@@ -671,64 +671,6 @@ function VoicePOS() {
               <p className={`text-xs ${customerHint.startsWith("Known") ? "text-emerald-600" : "text-slate-400"}`}>
                 {customerHint}
               </p>
-            )}
-            {order.length === 0 ? (
-              <p className="text-xs text-slate-400 md:hidden">Add items from the menu below</p>
-            ) : (
-              <ul className="text-sm max-h-28 overflow-y-auto divide-y divide-[var(--pos-soft)] md:hidden">
-                {order.map((item) => (
-                  <li key={item.product.id} className="py-1.5 flex items-center gap-2">
-                    <span className="flex-1 min-w-0 truncate">
-                      <span className="font-medium">{item.product.nameEn}</span>
-                      <span className="text-slate-400 text-xs ml-1">{item.product.nameGu}</span>
-                    </span>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        className="w-7 h-7 rounded-lg pos-soft-bg pos-text-dark font-bold"
-                        onClick={() => {
-                          setOrder((prev) =>
-                            prev
-                              .map((x) =>
-                                x.product.id === item.product.id
-                                  ? { ...x, quantity: x.quantity - 1 }
-                                  : x
-                              )
-                              .filter((x) => x.quantity > 0)
-                          );
-                        }}
-                      >
-                        −
-                      </button>
-                      <span className="w-6 text-center tabular-nums font-semibold">{item.quantity}</span>
-                      <button
-                        type="button"
-                        className="w-7 h-7 rounded-lg pos-soft-bg pos-text-dark font-bold"
-                        onClick={() => {
-                          setOrder((prev) =>
-                            prev.map((x) =>
-                              x.product.id === item.product.id
-                                ? { ...x, quantity: x.quantity + 1 }
-                                : x
-                            )
-                          );
-                        }}
-                      >
-                        +
-                      </button>
-                    </div>
-                    <span className="w-14 text-right tabular-nums pos-text font-semibold shrink-0">
-                      ₹{item.product.price * item.quantity}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {order.length > 0 && (
-              <div className="flex items-center justify-between pt-1 border-t pos-border md:hidden">
-                <span className="text-sm font-semibold">Total</span>
-                <span className="text-lg font-bold pos-text">₹{calculateTotal(order)}</span>
-              </div>
             )}
           </div>
 
@@ -742,7 +684,7 @@ function VoicePOS() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search product (English / Gujarati)..."
-                  className="w-full bg-white border pos-border rounded-xl pl-9 pr-9 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:pos-border0 focus:ring-2 focus:ring-orange-200"
+                  className="w-full bg-white border pos-border rounded-xl pl-9 pr-9 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:pos-border0 focus:ring-2 focus:ring-[color-mix(in_srgb,var(--pos-primary)_30%,white)]"
                   enterKeyHint="search"
                   autoComplete="off"
                   autoCorrect="off"
@@ -751,7 +693,7 @@ function VoicePOS() {
                   <button
                     type="button"
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-orange-100 pos-text text-xs font-bold"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full pos-soft-bg pos-text text-xs font-bold"
                     aria-label="Clear search"
                   >
                     ✕
@@ -766,8 +708,8 @@ function VoicePOS() {
                   onClick={() => setPriceTab(tab.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                     priceTab === tab.id
-                      ? "pos-soft-bg0 text-white"
-                      : "bg-white text-slate-600 hover:bg-orange-100 border pos-border"
+                      ? "pos-btn text-white"
+                      : "bg-white text-slate-600 hover:pos-soft-bg border pos-border"
                   }`}
                 >
                   {tab.label}
@@ -788,7 +730,7 @@ function VoicePOS() {
                     <button
                       key={p.id}
                       onClick={() => addProductManually(p.id)}
-                      className="bg-white hover:pos-soft-bg active:bg-orange-100 border pos-border rounded-xl px-3 py-3 text-left transition-colors shadow-sm"
+                      className="bg-white hover:pos-soft-bg active:pos-soft-bg border pos-border rounded-xl px-3 py-3 text-left transition-colors shadow-sm"
                     >
                       <div className="text-sm font-medium leading-tight text-slate-800">
                         {p.nameEn}
@@ -822,7 +764,7 @@ function VoicePOS() {
             <button
               onClick={confirmOrder}
               disabled={order.length === 0 || isSending}
-              className="pos-soft-bg0 hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
+              className="pos-btn hover:opacity-90 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
             >
               {isSending ? "Sending..." : "Okay"}
             </button>
@@ -835,7 +777,7 @@ function VoicePOS() {
               onClick={() => setIsParcel((v) => !v)}
               className={`flex-1 text-xs font-bold py-2 rounded-lg border transition-colors ${
                 isParcel
-                  ? "pos-soft-bg0 text-white pos-border0"
+                  ? "pos-btn text-white pos-border0"
                   : "bg-white text-slate-600 pos-border hover:pos-soft-bg"
               }`}
             >
@@ -879,7 +821,7 @@ function VoicePOS() {
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => updateQuantity(item.product.id, -1)}
-                      className="w-7 h-7 rounded-full bg-orange-100 hover:bg-orange-200 pos-text-dark flex items-center justify-center text-base"
+                      className="w-7 h-7 rounded-full pos-soft-bg hover:pos-soft-bg pos-text-dark flex items-center justify-center text-base"
                     >
                       −
                     </button>
@@ -888,7 +830,7 @@ function VoicePOS() {
                     </span>
                     <button
                       onClick={() => updateQuantity(item.product.id, 1)}
-                      className="w-7 h-7 rounded-full bg-orange-100 hover:bg-orange-200 pos-text-dark flex items-center justify-center text-base"
+                      className="w-7 h-7 rounded-full pos-soft-bg hover:pos-soft-bg pos-text-dark flex items-center justify-center text-base"
                     >
                       +
                     </button>
@@ -932,7 +874,7 @@ function VoicePOS() {
           onTouchEnd={onSheetTouchEnd}
           onClick={() => setSheetExpanded((v) => !v)}
         >
-          <div className="w-10 h-1 rounded-full bg-orange-300 mb-1" />
+          <div className="w-10 h-1 rounded-full pos-soft-bg mb-1" />
           <span className="text-[10px] text-slate-400 font-medium">
             {sheetExpanded ? "▼ swipe down to collapse" : "▲ swipe up for + / −"}
           </span>
@@ -945,7 +887,7 @@ function VoicePOS() {
             onClick={() => setIsParcel((v) => !v)}
             className={`flex-1 text-xs font-bold py-1.5 rounded-lg border ${
               isParcel
-                ? "pos-soft-bg0 text-white pos-border0"
+                ? "pos-btn text-white pos-border0"
                 : "bg-white text-slate-600 pos-border"
             }`}
           >
@@ -1003,7 +945,7 @@ function VoicePOS() {
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => updateQuantity(item.product.id, -1)}
-                      className="w-8 h-8 rounded-full bg-white border border-orange-300 pos-text-dark flex items-center justify-center text-lg font-bold active:bg-orange-100"
+                      className="w-8 h-8 rounded-full bg-white border pos-border pos-text-dark flex items-center justify-center text-lg font-bold active:pos-soft-bg"
                     >
                       −
                     </button>
@@ -1012,7 +954,7 @@ function VoicePOS() {
                     </span>
                     <button
                       onClick={() => updateQuantity(item.product.id, 1)}
-                      className="w-8 h-8 rounded-full bg-white border border-orange-300 pos-text-dark flex items-center justify-center text-lg font-bold active:bg-orange-100"
+                      className="w-8 h-8 rounded-full bg-white border pos-border pos-text-dark flex items-center justify-center text-lg font-bold active:pos-soft-bg"
                     >
                       +
                     </button>
@@ -1051,7 +993,7 @@ function VoicePOS() {
           <button
             onClick={confirmOrder}
             disabled={order.length === 0 || isSending}
-            className="pos-soft-bg0 hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-base px-6 py-3 rounded-xl transition-colors shadow-md"
+            className="pos-btn hover:opacity-90 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-base px-6 py-3 rounded-xl transition-colors shadow-md"
           >
             {isSending ? "..." : "Okay"}
           </button>

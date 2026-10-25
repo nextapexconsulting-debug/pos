@@ -141,15 +141,37 @@ function Body() {
           />
         </div>
 
+        <div className="border-t border-[color-mix(in_srgb,var(--pos-primary)_25%,white)] pt-3 space-y-2">
+          <h3 className="font-semibold text-sm">What to print</h3>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={cfg.printInvoice !== false}
+              onChange={(e) => setCfg({ ...cfg, printInvoice: e.target.checked })}
+            />
+            <b>Tax invoice</b> — prices, total, GST, QR (customer)
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={cfg.printKot !== false}
+              onChange={(e) => setCfg({ ...cfg, printKot: e.target.checked })}
+            />
+            <b>KOT / Kitchen</b> — items + qty only (no prices / GST / QR)
+          </label>
+          <p className="text-xs text-slate-500">
+            Turn on both for two separate slips. Turn off invoice if you only need kitchen tickets.
+          </p>
+        </div>
         <div>
-          <label className="text-xs text-slate-500">Copies per print</label>
+          <label className="text-xs text-slate-500">Legacy copies (optional)</label>
           <select
             className={input}
             value={cfg.copies ?? 2}
             onChange={(e) => setCfg({ ...cfg, copies: Number(e.target.value) === 1 ? 1 : 2 })}
           >
-            <option value={1}>1 copy only</option>
-            <option value={2}>2 copies (e.g. customer + shop)</option>
+            <option value={1}>1</option>
+            <option value={2}>2</option>
           </select>
         </div>
 
