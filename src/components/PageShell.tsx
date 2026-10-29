@@ -21,6 +21,8 @@ const CRUMBS: Record<string, string> = {
   "/expenses": "Expenses",
   "/stock": "Stock",
   "/reports": "Reports",
+  "/online-orders": "Online Orders",
+  "/online-order-details": "Online order details",
   "/menu": "Add / Edit Product",
   "/menu/import": "Import Menu",
   "/printer": "Printer",

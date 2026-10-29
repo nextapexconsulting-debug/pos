@@ -29,6 +29,9 @@ function Body() {
   const [bizDay, setBizDay] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [platforms, setPlatforms] = useState<{ id: string; name: string; commission_pct: number }[]>([]);
+  const [newPlat, setNewPlat] = useState("");
+  const [newPct, setNewPct] = useState("28");
 
   useEffect(() => {
     setTheme(getThemeId());
@@ -50,6 +53,11 @@ function Body() {
         if (data.day_start_time) setDayStart(String(data.day_start_time).slice(0, 5));
         if (data.day_end_time) setDayEnd(String(data.day_end_time).slice(0, 5));
       }
+      const { data: plats } = await supabase
+        .from("shop_delivery_platforms")
+        .select("id,name,commission_pct")
+        .order("sort_order");
+      setPlatforms((plats as any) || []);
       const { data: tim } = await supabase.rpc("get_shop_timings");
       if (tim) {
         if (tim.day_start_time) setDayStart(String(tim.day_start_time).slice(0, 5));
@@ -191,6 +199,88 @@ function Body() {
           <input className={input} type="number" min="0" step="0.1" value={lowStock} onChange={(e) => setLowStock(e.target.value)} />
         </div>
         <p className="text-xs text-slate-500">Checked on Stock page and can notify via Telegram when you open Stock.</p>
+      </div>
+
+      
+      <div className={`${card} space-y-3`}>
+        <h2 className="font-semibold">Delivery platforms (commission %)</h2>
+        <p className="text-xs text-slate-500">
+          Default <b>28%</b>. Add unlimited platforms (Zomato, Swiggy, or any new app). Used for Online
+          Orders and Reports net profit.
+        </p>
+        <ul className="space-y-2">
+          {platforms.map((p) => (
+            <li key={p.id} className="flex gap-2 items-center text-sm">
+              <span className="flex-1 font-medium">{p.name}</span>
+              <input
+                className={input + " !w-20"}
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                defaultValue={p.commission_pct}
+                onBlur={async (e) => {
+                  const v = Number(e.target.value);
+                  if (isNaN(v)) return;
+                  await supabase
+                    .from("shop_delivery_platforms")
+                    .update({ commission_pct: v })
+                    .eq("id", p.id);
+                }}
+              />
+              <span className="text-xs text-slate-500">%</span>
+              <button
+                type="button"
+                className="text-xs text-red-500"
+                onClick={async () => {
+                  if (!confirm("Remove " + p.name + "?")) return;
+                  await supabase.from("shop_delivery_platforms").delete().eq("id", p.id);
+                  setPlatforms((prev) => prev.filter((x) => x.id !== p.id));
+                }}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="flex gap-2 flex-wrap items-end">
+          <div className="flex-1 min-w-[120px]">
+            <label className="text-xs text-slate-500">New platform</label>
+            <input className={input} value={newPlat} onChange={(e) => setNewPlat(e.target.value)} placeholder="Name" />
+          </div>
+          <div className="w-24">
+            <label className="text-xs text-slate-500">Comm %</label>
+            <input className={input} value={newPct} onChange={(e) => setNewPct(e.target.value)} />
+          </div>
+          <button
+            type="button"
+            className={btn2}
+            onClick={async () => {
+              const name = newPlat.trim();
+              if (!name) return;
+              const { data: me } = await supabase.from("profiles").select("shop_id").maybeSingle();
+              if (!me?.shop_id) return;
+              const { data, error } = await supabase
+                .from("shop_delivery_platforms")
+                .insert({
+                  shop_id: me.shop_id,
+                  name,
+                  commission_pct: Number(newPct) || 28,
+                  sort_order: platforms.length + 1,
+                })
+                .select("id,name,commission_pct")
+                .single();
+              if (error) setMsg(error.message);
+              else if (data) {
+                setPlatforms((prev) => [...prev, data as any]);
+                setNewPlat("");
+                setNewPct("28");
+              }
+            }}
+          >
+            Add
+          </button>
+        </div>
       </div>
 
       <div className={`${card} space-y-3`}>

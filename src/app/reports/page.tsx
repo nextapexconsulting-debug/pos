@@ -46,7 +46,38 @@ const REPORTS: Rep[] = [
     load: (f, t) => rpc("report_daily", f, t),
   },
   {
-    id: "monthly",
+    
+  {
+    id: "online_platforms",
+    label: "Online (after commission)",
+    totals: true,
+    hint: "Portal sales after platform commission (from Configuration, default 28%). Net is what counts toward online profit.",
+    cols: [
+      { key: "platform", label: "Platform" },
+      { key: "orders", label: "Orders", num: true },
+      { key: "gross", label: "Gross (before commission)", money: true },
+      { key: "commission_amt", label: "Commission deducted", money: true },
+      { key: "net_after_commission", label: "Net after commission (profit from online)", money: true },
+    ],
+    load: (f, t) => rpc("report_online_platforms", f, t),
+  },
+  {
+    id: "online_daily",
+    label: "Online daily by platform",
+    totals: true,
+    hint: "Each day × Zomato/Swiggy etc. Gross vs net after commission.",
+    cols: [
+      { key: "day", label: "Date" },
+      { key: "platform", label: "Platform" },
+      { key: "orders", label: "Orders", num: true },
+      { key: "gross", label: "Gross", money: true },
+      { key: "commission_amt", label: "Commission", money: true },
+      { key: "net_after_commission", label: "Net after commission", money: true },
+    ],
+    load: (f, t) => rpc("report_online_daily", f, t),
+  },
+
+  id: "monthly",
     label: "Monthly summary",
     totals: true,
     hint: "Same as daily, rolled up by month.",

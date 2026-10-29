@@ -26,6 +26,8 @@ export default function NavLinks() {
                 { href: "/expenses", label: "Expenses" },
                 { href: "/stock", label: "Stock" },
                 { href: "/recipes", label: "Item recipes" },
+                { href: "/online-orders", label: "Online Orders" },
+                { href: "/online-order-details", label: "Online order details" },
                 { href: "/reports", label: "Reports" },
                 { href: "/menu", label: "Add / Edit Product" },
                 { href: "/printer", label: "Printer" },
@@ -37,6 +39,8 @@ export default function NavLinks() {
             : [
             { href: "/menu", label: "Add / Edit Product" },
             { href: "/recipes", label: "Item recipes" },
+            { href: "/online-orders", label: "Online Orders" },
+            { href: "/online-order-details", label: "Online order details" },
           ]),
         ];
 
