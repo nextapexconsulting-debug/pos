@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import PageShell, { card, input, btn } from "@/components/PageShell";
+import PageShell, { card, input, btn, btn2 } from "@/components/PageShell";
 import { supabase } from "@/lib/supabase";
 import { THEMES, ThemeId, applyTheme, getThemeId } from "@/lib/theme";
 import Link from "next/link";
