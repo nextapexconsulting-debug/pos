@@ -131,8 +131,8 @@ function VoicePOS() {
     // continuous=true is unreliable on many mobile browsers – use false + auto-restart
     recognition.continuous = !mobile;
     recognition.interimResults = true;
-    recognition.lang = "en-IN";
-    recognition.maxAlternatives = 1;
+    recognition.lang = "en-IN"; // Indian English; product keywords still match Gujarati names
+    recognition.maxAlternatives = 5;
 
     let lastInterim = "";
 
@@ -142,7 +142,25 @@ function VoicePOS() {
       setTranscript((prev) => (prev ? prev + " " + cleaned : cleaned));
       setInterimTranscript("");
 
-      const parsed = parseSpokenOrder(cleaned, productsRef.current);
+      const list = productsRef.current;
+      if (!list.length) {
+        setStatus("Menu not loaded yet – wait a second and try again");
+        return;
+      }
+
+      // Try full phrase, then each alternative-style split
+      let parsed = parseSpokenOrder(cleaned, list);
+      if (!parsed.length) {
+        // Retry without filler words
+        const stripped = cleaned
+          .replace(/\b(please|order|give|me|i want|add|ek|one|the)\b/gi, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (stripped && stripped !== cleaned) {
+          parsed = parseSpokenOrder(stripped, list);
+        }
+      }
+
       if (parsed.length > 0) {
         setOrder((prev) => mergeOrderItems(prev, parsed));
         const names = parsed
@@ -151,7 +169,7 @@ function VoicePOS() {
         setLastAdded(names);
         setStatus(`Added: ${names}`);
       } else {
-        setStatus(`Heard: "${cleaned}" (no match – try full name)`);
+        setStatus(`Heard: "${cleaned}" — no product match. Say full name or use search.`);
       }
     };
 
@@ -221,14 +239,20 @@ function VoicePOS() {
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interim = "";
-      let final = "";
+      let finalBest = "";
+      const finalAlts: string[] = [];
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          final += result[0].transcript + " ";
+          // Collect all alternatives – first match wins in parse
+          for (let a = 0; a < result.length; a++) {
+            const tx = (result[a]?.transcript || "").trim();
+            if (tx) finalAlts.push(tx);
+          }
+          finalBest += (result[0]?.transcript || "") + " ";
         } else {
-          interim += result[0].transcript;
+          interim += result[0]?.transcript || "";
         }
       }
 
@@ -237,9 +261,27 @@ function VoicePOS() {
         setInterimTranscript(interim);
       }
 
-      if (final.trim()) {
+      if (finalBest.trim() || finalAlts.length) {
         lastInterim = "";
-        processSpoken(final.trim());
+        // Try best transcript first, then other alternatives until one matches
+        const tried = new Set<string>();
+        const candidates = [finalBest.trim(), ...finalAlts].filter(Boolean);
+        let matched = false;
+        for (const c of candidates) {
+          const key = c.toLowerCase();
+          if (tried.has(key)) continue;
+          tried.add(key);
+          const before = productsRef.current;
+          const parsed = parseSpokenOrder(c, before);
+          if (parsed.length) {
+            processSpoken(c);
+            matched = true;
+            break;
+          }
+        }
+        if (!matched && finalBest.trim()) {
+          processSpoken(finalBest.trim());
+        }
       }
     };
 
@@ -251,27 +293,54 @@ function VoicePOS() {
     };
   }, []);
 
-  const startListening = useCallback(() => {
-    if (!recognitionRef.current) return;
+  const startListening = useCallback(async () => {
+    if (!recognitionRef.current) {
+      setError("Voice engine not ready. Use Chrome/Edge (Android) or search/tap.");
+      return;
+    }
+    if (!window.isSecureContext && location.hostname !== "localhost") {
+      setError("Voice needs HTTPS. Open the app via https:// link.");
+      return;
+    }
     setTranscript("");
     setInterimTranscript("");
     setLastAdded(null);
     setError(null);
+    setStatus("Starting mic…");
     wantListeningRef.current = true;
+
+    // Warm up mic permission (helps Chrome/Android actually listen)
     try {
-      recognitionRef.current.start();
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((tr) => tr.stop());
+      }
     } catch {
-      // If already started, stop then start fresh (mobile quirk)
-      try {
-        recognitionRef.current.stop();
-      } catch {}
-      setTimeout(() => {
-        if (!wantListeningRef.current || !recognitionRef.current) return;
-        try {
-          recognitionRef.current.start();
-        } catch {}
-      }, 200);
+      wantListeningRef.current = false;
+      setError("Microphone blocked. Allow mic for this site and tap 🎤 again.");
+      return;
     }
+
+    const kick = () => {
+      if (!wantListeningRef.current || !recognitionRef.current) return;
+      try {
+        recognitionRef.current.start();
+      } catch {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+        setTimeout(() => {
+          if (!wantListeningRef.current || !recognitionRef.current) return;
+          try {
+            recognitionRef.current.start();
+          } catch (e) {
+            setError("Could not start mic. Tap 🎤 again.");
+            wantListeningRef.current = false;
+          }
+        }, 280);
+      }
+    };
+    kick();
   }, []);
 
   const stopListening = useCallback(() => {
