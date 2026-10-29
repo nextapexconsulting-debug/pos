@@ -46,8 +46,6 @@ const REPORTS: Rep[] = [
     load: (f, t) => rpc("report_daily", f, t),
   },
   {
-    
-  {
     id: "online_platforms",
     label: "Online (after commission)",
     totals: true,
@@ -76,8 +74,8 @@ const REPORTS: Rep[] = [
     ],
     load: (f, t) => rpc("report_online_daily", f, t),
   },
-
-  id: "monthly",
+  {
+    id: "monthly",
     label: "Monthly summary",
     totals: true,
     hint: "Same as daily, rolled up by month.",

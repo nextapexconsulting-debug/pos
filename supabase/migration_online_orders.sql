@@ -172,7 +172,7 @@ language sql stable security definer set search_path = public as $$
     and o.order_date >= p_from
     and o.order_date <= p_to
   group by o.platform_name
-  order by net_after_commission desc;
+  order by round(sum(o.amount * (1 - o.commission_pct / 100.0)), 2) desc;
 $$;
 grant execute on function report_online_platforms(date, date) to authenticated;
 
