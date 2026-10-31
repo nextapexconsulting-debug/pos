@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Product, loadProducts, fetchShopProducts } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
 import AuthGate from "@/components/AuthGate";
@@ -22,6 +23,7 @@ export default function Page() {
 }
 
 function VoicePOS() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [order, setOrder] = useState<OrderItem[]>([]);
   const [isListening, setIsListening] = useState(false);
@@ -499,6 +501,16 @@ function VoicePOS() {
       customerMobile: custMobile,
     });
 
+    // Customer payment screen (QR + amount)
+    try {
+      const params = new URLSearchParams({
+        orderNo: String(newOrderNumber),
+        total: String(saved.total),
+        id: String(saved.order_id || ""),
+      });
+      router.push(`/pay?${params.toString()}`);
+    } catch {}
+
     const now = new Date();
     const timeStr = now.toLocaleTimeString("gu-IN", {
       hour: "2-digit",
@@ -753,7 +765,7 @@ function VoicePOS() {
                     <button
                       key={p.id}
                       onClick={() => addProductManually(p.id)}
-                      className="bg-white hover:shadow-md hover:border-[var(--pos-primary)] active:scale-[0.98] border border-slate-200/80 rounded-2xl px-3.5 py-3.5 text-left transition-all shadow-sm"
+                      className="bg-white hover:border-slate-400 active:scale-[0.99] border border-slate-200 rounded-2xl px-3.5 py-3.5 text-left transition-all shadow-sm hover:shadow"
                     >
                       <div className="text-sm font-medium leading-tight text-slate-800">
                         {p.nameEn}
@@ -761,7 +773,7 @@ function VoicePOS() {
                       <div className="text-xs text-slate-500 truncate mt-0.5">
                         {p.nameGu}
                       </div>
-                      <div className="pos-text text-base font-bold mt-1.5 tabular-nums">
+                      <div className="pos-price text-base font-bold mt-1.5">
                         ₹{p.price}
                       </div>
                     </button>
@@ -860,7 +872,7 @@ function VoicePOS() {
                   </div>
 
                   <div className="text-right min-w-[48px]">
-                    <div className="font-semibold pos-text text-sm">
+                    <div className="font-semibold text-slate-900 text-sm tabular-nums">
                       ₹{item.product.price * item.quantity}
                     </div>
                     <button
@@ -983,7 +995,7 @@ function VoicePOS() {
                     </button>
                   </div>
                   <div className="text-right min-w-[44px]">
-                    <div className="font-semibold pos-text text-sm">
+                    <div className="font-semibold text-slate-900 text-sm tabular-nums">
                       ₹{item.product.price * item.quantity}
                     </div>
                     <button
@@ -1006,7 +1018,7 @@ function VoicePOS() {
               {order.length} item{order.length === 1 ? "" : "s"}
               {!sheetExpanded && order.length > 0 ? " · tap to edit" : ""}
             </div>
-            <div className="text-lg font-bold pos-text">₹{total}</div>
+            <div className="text-lg font-bold text-slate-900">₹{total}</div>
           </div>
           {order.length > 0 && (
             <button onClick={clearOrder} className="text-xs text-red-500 px-2 py-2">

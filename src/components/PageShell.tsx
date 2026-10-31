@@ -5,13 +5,13 @@ import { usePathname } from "next/navigation";
 import AuthGate from "./AuthGate";
 import AppHeader from "./AppHeader";
 
-export const card = "bg-white border rounded-2xl p-4 shadow-md pos-card";
+export const card = "bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm";
 export const input =
-  "bg-white border rounded-lg px-3 py-2 text-sm w-full focus:outline-none text-slate-800 pos-input";
+  "bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm w-full focus:outline-none text-slate-900 pos-input";
 export const btn =
-  "pos-btn disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors";
+  "pos-btn disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors";
 export const btn2 =
-  "pos-btn text-white text-sm px-3 py-1.5 rounded-lg font-medium";
+  "pos-btn text-white text-sm px-3 py-1.5 rounded-xl font-medium";
 
 const CRUMBS: Record<string, string> = {
   "/": "New Order",
@@ -21,6 +21,7 @@ const CRUMBS: Record<string, string> = {
   "/expenses": "Expenses",
   "/stock": "Stock",
   "/reports": "Reports",
+  "/pay": "Pay Now",
   "/online-orders": "Online Order",
   "/online-order-details": "Online Total Amount",
   "/menu": "Add / Edit Product",

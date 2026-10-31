@@ -1,14 +1,14 @@
-:root {
-  --pos-primary: var(--pos-primary);
-  --pos-primary-dark: var(--pos-primary-dark);
-  --pos-soft: #ffedd5;
-}
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --pos-primary: #0f172a;
+  --pos-primary-dark: #020617;
+  --pos-soft: #f1f5f9;
+  --pos-ink: #0f172a;
+  --pos-paper: #ffffff;
+  --background: #f8fafc;
   --foreground: #0f172a;
-  --accent: var(--pos-primary);
+  --accent: #0f172a;
 }
 
 body {
@@ -21,99 +21,46 @@ body {
   overflow-x: hidden;
 }
 
-/* Scrollbars = theme primary (page, menu, tables) */
+/* Scrollbars — ink on soft */
 html, body, * {
   scrollbar-width: thin;
-  scrollbar-color: var(--pos-primary) var(--pos-soft) !important;
+  scrollbar-color: var(--pos-primary) var(--pos-soft);
 }
-html::-webkit-scrollbar,
-body::-webkit-scrollbar,
-*::-webkit-scrollbar {
-  width: 8px !important;
-  height: 8px !important;
-}
-html::-webkit-scrollbar-track,
-body::-webkit-scrollbar-track,
-*::-webkit-scrollbar-track {
-  background: var(--pos-soft) !important;
-  border-radius: 4px;
-}
-html::-webkit-scrollbar-thumb,
-body::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: var(--pos-soft); }
 *::-webkit-scrollbar-thumb {
-  background: var(--pos-primary) !important;
+  background: color-mix(in srgb, var(--pos-primary) 55%, white);
   border-radius: 4px;
 }
-html::-webkit-scrollbar-thumb:hover,
-body::-webkit-scrollbar-thumb:hover,
-*::-webkit-scrollbar-thumb:hover {
-  background: var(--pos-primary-dark) !important;
-}
+*::-webkit-scrollbar-thumb:hover { background: var(--pos-primary); }
 
-/* Pulse animation for mic – orange */
-@keyframes pulse-ring {
-  0% {
-    transform: scale(0.8);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-}
-
-.mic-pulse::before {
-  content: "";
-  position: absolute;
-  inset: -8px;
-  border-radius: 9999px;
-  background: var(--pos-primary);
-  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-  z-index: -1;
-}
-
-.mic-active {
-  background: var(--pos-primary-dark) !important;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--pos-primary) 35%, transparent);
-}
-
-/* Theme-driven components — all buttons/surfaces follow --pos-primary */
 .pos-btn {
   background-color: var(--pos-primary);
+  color: #fff;
 }
 .pos-btn:hover:not(:disabled) {
   background-color: var(--pos-primary-dark);
 }
 .pos-card {
-  border-color: color-mix(in srgb, var(--pos-primary) 28%, white);
+  border-color: color-mix(in srgb, var(--pos-primary) 12%, white);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.05);
 }
 .pos-input {
-  border-color: color-mix(in srgb, var(--pos-primary) 28%, white);
+  border-color: color-mix(in srgb, var(--pos-primary) 14%, white);
+  color: var(--pos-ink);
 }
 .pos-input:focus {
   border-color: var(--pos-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pos-primary) 12%, transparent);
 }
-.pos-soft-bg {
-  background-color: var(--pos-soft);
-}
-.pos-border {
-  border-color: color-mix(in srgb, var(--pos-primary) 35%, white);
-}
-.pos-text {
-  color: var(--pos-primary);
-}
-.pos-text-dark {
-  color: var(--pos-primary-dark);
-}
+.pos-soft-bg { background-color: var(--pos-soft); }
+.pos-border { border-color: color-mix(in srgb, var(--pos-primary) 12%, white); }
+.pos-text { color: var(--pos-ink); }
+.pos-text-dark { color: var(--pos-primary-dark); }
 
-
-/* Rich surface */
-body {
-  background:
-    radial-gradient(1200px 600px at 10% -10%, color-mix(in srgb, var(--pos-soft) 80%, white), transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, color-mix(in srgb, var(--pos-primary) 12%, white), transparent 50%),
-    #f8fafc;
-}
-.pos-card {
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+/* Product price = same ink as name (no second hue) */
+.pos-price {
+  color: var(--pos-ink);
+  font-variant-numeric: tabular-nums;
 }

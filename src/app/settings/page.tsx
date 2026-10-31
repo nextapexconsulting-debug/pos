@@ -15,7 +15,7 @@ export default function SettingsPage() {
 }
 
 function Body() {
-  const [theme, setTheme] = useState<ThemeId>("saffron_gold");
+  const [theme, setTheme] = useState<ThemeId>("ink_snow");
   const [notify, setNotify] = useState(true);
   const [rent, setRent] = useState("25000");
   const [elec, setElec] = useState("5000");
@@ -32,6 +32,7 @@ function Body() {
   const [platforms, setPlatforms] = useState<{ id: string; name: string; commission_pct: number }[]>([]);
   const [newPlat, setNewPlat] = useState("");
   const [newPct, setNewPct] = useState("28");
+  const [paymentQr, setPaymentQr] = useState("");
 
   useEffect(() => {
     setTheme(getThemeId());
@@ -50,6 +51,7 @@ function Body() {
         setShopState(data.shop_state || "Gujarat");
         setGstRate(String(data.gst_rate ?? 5));
         setInvoicePrefix(data.invoice_prefix || "INV");
+        if (data.payment_qr) setPaymentQr(data.payment_qr);
         if (data.day_start_time) setDayStart(String(data.day_start_time).slice(0, 5));
         if (data.day_end_time) setDayEnd(String(data.day_end_time).slice(0, 5));
       }
@@ -91,6 +93,7 @@ function Body() {
       shop_state: shopState.trim() || "Gujarat",
       gst_rate: Number(gstRate) || 5,
       invoice_prefix: invoicePrefix.trim() || "INV",
+      payment_qr: paymentQr || null,
       day_start_time: dayStart.length === 5 ? dayStart + ":00" : dayStart,
       day_end_time: dayEnd.length === 5 ? dayEnd + ":00" : dayEnd,
       updated_at: new Date().toISOString(),
@@ -202,6 +205,53 @@ function Body() {
       </div>
 
       
+      
+      <div className={`${card} space-y-3`}>
+        <h2 className="font-semibold">Payment scanner (UPI QR)</h2>
+        <p className="text-xs text-slate-500">
+          Upload your UPI / bank QR image. After each order, staff/customer see amount + this
+          scanner on the Pay Now page.
+        </p>
+        {paymentQr ? (
+          <div className="flex flex-col items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={paymentQr} alt="Payment QR" className="w-40 h-40 object-contain border border-slate-200 rounded-xl bg-white p-2" />
+            <button
+              type="button"
+              className="text-xs text-red-600"
+              onClick={() => setPaymentQr("")}
+            >
+              Remove QR
+            </button>
+          </div>
+        ) : (
+          <p className="text-xs text-slate-400">No QR uploaded yet</p>
+        )}
+        <div>
+          <label className="text-xs text-slate-500">Upload QR image</label>
+          <input
+            type="file"
+            accept="image/*"
+            className="block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-slate-900 file:text-white file:text-xs file:font-semibold"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (file.size > 900_000) {
+                setMsg("Image too large — use under 900 KB");
+                return;
+              }
+              const reader = new FileReader();
+              reader.onload = () => {
+                const result = String(reader.result || "");
+                setPaymentQr(result);
+                setMsg("QR loaded — click Save configuration");
+              };
+              reader.readAsDataURL(file);
+            }}
+          />
+        </div>
+      </div>
+
       <div className={`${card} space-y-3`}>
         <h2 className="font-semibold">Delivery platforms (commission %)</h2>
         <p className="text-xs text-slate-500">

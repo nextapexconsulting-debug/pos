@@ -7,7 +7,6 @@ import { useRef, useEffect } from "react";
 
 type NavLink = { href: string; label: string };
 
-/** Title Case for menu labels */
 function titleCase(s: string) {
   return s.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 }
@@ -18,7 +17,6 @@ export default function NavLinks() {
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const pathname = usePathname();
 
-  // Fixed order: Orders → Online Order → Online Total Amount → Edit Order → rest
   const links: NavLink[] =
     a.role === "super_admin"
       ? [{ href: "/admin", label: "Admin" }]
@@ -70,58 +68,40 @@ export default function NavLinks() {
   const isActive = (href: string) =>
     pathname === href || (href !== "/" && pathname.startsWith(href + "/"));
 
+  const pill =
+    "inline-flex items-center gap-1.5 rounded-full bg-white text-[var(--pos-primary)] text-xs sm:text-sm font-semibold px-3.5 py-1.5 shadow-sm hover:bg-white/90 transition-colors";
+
   return (
-    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1 rounded-full bg-white/95 text-[var(--pos-primary-dark)] text-xs sm:text-sm font-bold px-3 py-1.5 shadow-sm hover:bg-white transition-colors border border-white/40"
-      >
+    <div className="flex items-center gap-2 shrink-0">
+      <Link href="/" className={pill}>
         <span className="text-base leading-none">+</span>
-        <span>New Order</span>
+        New Order
       </Link>
 
       <details ref={detailsRef} className="relative">
-        <summary
-          className="list-none cursor-pointer select-none inline-flex items-center gap-1.5 rounded-full bg-white/95 text-[var(--pos-primary-dark)] text-xs sm:text-sm font-bold px-3 py-1.5 shadow-sm hover:bg-white transition-colors border border-white/40 [&::-webkit-details-marker]:hidden"
-        >
-          <span className="text-base leading-none" aria-hidden>
-            ☰
-          </span>
-          <span>Menu</span>
+        <summary className={pill + " list-none cursor-pointer [&::-webkit-details-marker]:hidden"}>
+          <span className="text-base leading-none">☰</span>
+          Menu
         </summary>
-        <div
-          className="absolute right-0 mt-2 w-60 max-h-[min(70vh,28rem)] overflow-y-auto rounded-2xl z-30 py-1.5 shadow-2xl border border-black/5"
-          style={{
-            background: "linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, var(--pos-soft) 55%, white) 100%)",
-          }}
-        >
-          <div className="px-3 py-2 border-b border-black/5">
+        <div className="absolute right-0 mt-2 w-60 max-h-[min(70vh,28rem)] overflow-y-auto rounded-2xl z-30 py-1.5 bg-white border border-slate-200/80 shadow-xl">
+          <div className="px-3 py-2 border-b border-slate-100">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
               GenZPOS
             </p>
           </div>
           {links.map(({ href, label }, i) => {
             const active = isActive(href);
-            const showDivider = i === 3; // after Edit Orders
             return (
               <div key={href}>
-                {showDivider && (
-                  <div className="my-1.5 mx-3 border-t border-black/8" />
-                )}
+                {i === 4 && <div className="my-1.5 mx-3 border-t border-slate-100" />}
                 <Link
                   href={href}
                   className={`mx-1.5 flex items-center rounded-xl px-3 py-2.5 text-sm transition-colors ${
                     active
-                      ? "font-semibold text-white shadow-sm"
-                      : "text-slate-800 hover:bg-white/80"
+                      ? "font-semibold text-white"
+                      : "text-slate-800 hover:bg-slate-50"
                   }`}
-                  style={
-                    active
-                      ? {
-                          backgroundColor: "var(--pos-primary)",
-                        }
-                      : undefined
-                  }
+                  style={active ? { backgroundColor: "var(--pos-primary)" } : undefined}
                   onClick={() => {
                     if (detailsRef.current) detailsRef.current.open = false;
                   }}
@@ -131,7 +111,7 @@ export default function NavLinks() {
               </div>
             );
           })}
-          <div className="my-1.5 mx-3 border-t border-black/8" />
+          <div className="my-1.5 mx-3 border-t border-slate-100" />
           <button
             type="button"
             onClick={logout}
