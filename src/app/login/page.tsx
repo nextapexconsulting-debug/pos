@@ -43,7 +43,7 @@ export default function LoginPage() {
       <form onSubmit={submit} className="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-3">
         <div className="text-center mb-2">
           <div className="text-3xl">🥪🍕</div>
-          <h1 className="text-xl font-bold">GenZPOS</h1>
+          <h1 className="text-2xl font-bold tracking-tight">GenZPOS</h1>
           <p className="text-xs text-slate-400">{mode === "login" ? "Log in to your shop" : "Create your shop account"}</p>
         </div>
         {mode === "signup" && (

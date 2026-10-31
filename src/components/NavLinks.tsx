@@ -7,41 +7,46 @@ import { useRef, useEffect } from "react";
 
 type NavLink = { href: string; label: string };
 
+/** Title Case for menu labels */
+function titleCase(s: string) {
+  return s.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+}
+
 export default function NavLinks() {
   const a = useAccess();
   const owner = a.role === "owner";
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const pathname = usePathname();
 
+  // Fixed order: Orders → Online Order → Online Total Amount → Edit Order → rest
   const links: NavLink[] =
     a.role === "super_admin"
       ? [{ href: "/admin", label: "Admin" }]
       : [
           { href: "/orders", label: "Orders" },
-          { href: "/orders/edit", label: "Edit Order" },
+          { href: "/online-orders", label: "Online Order" },
+          { href: "/online-order-details", label: "Online Total Amount" },
+          { href: "/orders/edit", label: "Edit Orders" },
           { href: "/customers", label: "Customers" },
           ...(owner
             ? [
                 { href: "/dashboard", label: "Today / Profit" },
                 { href: "/expenses", label: "Expenses" },
                 { href: "/stock", label: "Stock" },
-                { href: "/recipes", label: "Item recipes" },
-                { href: "/online-orders", label: "Online Orders" },
-                { href: "/online-order-details", label: "Online order details" },
+                { href: "/recipes", label: "Item Recipes" },
                 { href: "/reports", label: "Reports" },
                 { href: "/menu", label: "Add / Edit Product" },
                 { href: "/printer", label: "Printer" },
                 { href: "/settings", label: "Configuration" },
-                { href: "/marketing", label: "Marketing / QR" },
+                { href: "/marketing", label: "Marketing / Qr" },
+                { href: "/scanners", label: "Qr Scanners" },
                 { href: "/staff", label: "Staff" },
                 { href: "/billing", label: "Billing" },
               ]
             : [
-            { href: "/menu", label: "Add / Edit Product" },
-            { href: "/recipes", label: "Item recipes" },
-            { href: "/online-orders", label: "Online Orders" },
-            { href: "/online-order-details", label: "Online order details" },
-          ]),
+                { href: "/menu", label: "Add / Edit Product" },
+                { href: "/recipes", label: "Item Recipes" },
+              ]),
         ];
 
   useEffect(() => {
@@ -62,51 +67,77 @@ export default function NavLinks() {
     return () => document.removeEventListener("click", onClick, true);
   }, []);
 
+  const isActive = (href: string) =>
+    pathname === href || (href !== "/" && pathname.startsWith(href + "/"));
+
   return (
     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap">
-      {pathname !== "/" && (
-        <Link
-          href="/"
-          className="inline-flex items-center justify-center h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm bg-white font-bold rounded-lg shadow-sm"
-          style={{ color: "var(--pos-primary)" }}
-        >
-          <span className="sm:hidden">+ Order</span>
-          <span className="hidden sm:inline">+ New Order</span>
-        </Link>
-      )}
+      <Link
+        href="/"
+        className="inline-flex items-center gap-1 rounded-full bg-white/95 text-[var(--pos-primary-dark)] text-xs sm:text-sm font-bold px-3 py-1.5 shadow-sm hover:bg-white transition-colors border border-white/40"
+      >
+        <span className="text-base leading-none">+</span>
+        <span>New Order</span>
+      </Link>
+
       <details ref={detailsRef} className="relative">
-        <summary className="list-none cursor-pointer inline-flex items-center justify-center h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm bg-white font-bold rounded-lg border pos-border shadow-sm select-none"
-          style={{ color: "var(--pos-primary-dark)" }}>
-          ☰ Menu
+        <summary
+          className="list-none cursor-pointer select-none inline-flex items-center gap-1.5 rounded-full bg-white/95 text-[var(--pos-primary-dark)] text-xs sm:text-sm font-bold px-3 py-1.5 shadow-sm hover:bg-white transition-colors border border-white/40 [&::-webkit-details-marker]:hidden"
+        >
+          <span className="text-base leading-none" aria-hidden>
+            ☰
+          </span>
+          <span>Menu</span>
         </summary>
-        <div className="absolute right-0 mt-2 w-52 max-h-[70vh] overflow-y-auto bg-white border pos-border rounded-xl shadow-xl z-30 text-slate-800">
-          {links.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`block px-4 py-2.5 text-sm hover:pos-soft-bg ${
-                pathname === href || (href !== "/" && pathname.startsWith(href + "/"))
-                  ? "pos-soft-bg font-semibold"
-                  : "text-slate-800"
-              }`}
-              style={
-                pathname === href || (href !== "/" && pathname.startsWith(href + "/"))
-                  ? { color: "var(--pos-primary-dark)" }
-                  : undefined
-              }
-              onClick={() => {
-                if (detailsRef.current) detailsRef.current.open = false;
-              }}
-            >
-              {label}
-            </Link>
-          ))}
+        <div
+          className="absolute right-0 mt-2 w-60 max-h-[min(70vh,28rem)] overflow-y-auto rounded-2xl z-30 py-1.5 shadow-2xl border border-black/5"
+          style={{
+            background: "linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, var(--pos-soft) 55%, white) 100%)",
+          }}
+        >
+          <div className="px-3 py-2 border-b border-black/5">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              GenZPOS
+            </p>
+          </div>
+          {links.map(({ href, label }, i) => {
+            const active = isActive(href);
+            const showDivider = i === 3; // after Edit Orders
+            return (
+              <div key={href}>
+                {showDivider && (
+                  <div className="my-1.5 mx-3 border-t border-black/8" />
+                )}
+                <Link
+                  href={href}
+                  className={`mx-1.5 flex items-center rounded-xl px-3 py-2.5 text-sm transition-colors ${
+                    active
+                      ? "font-semibold text-white shadow-sm"
+                      : "text-slate-800 hover:bg-white/80"
+                  }`}
+                  style={
+                    active
+                      ? {
+                          backgroundColor: "var(--pos-primary)",
+                        }
+                      : undefined
+                  }
+                  onClick={() => {
+                    if (detailsRef.current) detailsRef.current.open = false;
+                  }}
+                >
+                  {titleCase(label)}
+                </Link>
+              </div>
+            );
+          })}
+          <div className="my-1.5 mx-3 border-t border-black/8" />
           <button
             type="button"
             onClick={logout}
-            className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:pos-soft-bg border-t pos-border"
+            className="mx-1.5 mb-1 w-[calc(100%-0.75rem)] text-left rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"
           >
-            Log out
+            Log Out
           </button>
         </div>
       </details>

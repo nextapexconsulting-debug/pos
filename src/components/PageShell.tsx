@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import AuthGate from "./AuthGate";
 import AppHeader from "./AppHeader";
 
-export const card = "bg-white border rounded-xl p-3 shadow-sm pos-card";
+export const card = "bg-white border rounded-2xl p-4 shadow-md pos-card";
 export const input =
   "bg-white border rounded-lg px-3 py-2 text-sm w-full focus:outline-none text-slate-800 pos-input";
 export const btn =
@@ -21,8 +21,8 @@ const CRUMBS: Record<string, string> = {
   "/expenses": "Expenses",
   "/stock": "Stock",
   "/reports": "Reports",
-  "/online-orders": "Online Orders",
-  "/online-order-details": "Online order details",
+  "/online-orders": "Online Order",
+  "/online-order-details": "Online Total Amount",
   "/menu": "Add / Edit Product",
   "/menu/import": "Import Menu",
   "/printer": "Printer",

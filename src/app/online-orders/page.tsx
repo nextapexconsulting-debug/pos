@@ -17,7 +17,7 @@ type Row = {
 
 export default function OnlineOrdersPage() {
   return (
-    <PageShell title="Online Orders" roles={["owner", "staff"]}>
+    <PageShell title="Online Order" roles={["owner", "staff"]}>
       <Body />
     </PageShell>
   );

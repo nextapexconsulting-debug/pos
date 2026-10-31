@@ -27,7 +27,7 @@ type Daily = {
 
 export default function OnlineOrderDetailsPage() {
   return (
-    <PageShell title="Online order details" roles={["owner", "staff"]}>
+    <PageShell title="Online Total Amount" roles={["owner", "staff"]}>
       <Body />
     </PageShell>
   );
