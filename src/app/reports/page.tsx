@@ -74,6 +74,39 @@ const REPORTS: Rep[] = [
     ],
     load: (f, t) => rpc("report_online_daily", f, t),
   },
+
+  {
+    id: "inv_summary",
+    label: "Inventory: purchase & use",
+    totals: true,
+    hint: "Per item in range: qty purchased (stock in), purchase ₹ amount, qty used (from opening/in/closing). Best from a clean baseline (e.g. 1 Nov).",
+    cols: [
+      { key: "item", label: "Item" },
+      { key: "unit", label: "Unit" },
+      { key: "purchased_qty", label: "Purchased qty", num: true },
+      { key: "purchase_amount", label: "Purchase ₹", money: true },
+      { key: "used_qty", label: "Used qty", num: true },
+      { key: "opening_first", label: "Open (start)", num: true },
+      { key: "closing_last", label: "Close (end)", num: true },
+    ],
+    load: (f, t) => rpc("report_inventory_summary", f, t),
+  },
+  {
+    id: "inv_purchases",
+    label: "Inventory: purchase lines",
+    totals: true,
+    hint: "Every stock-in / purchase entry with date, qty and amount (linked to expenses when cost was entered).",
+    cols: [
+      { key: "entry_date", label: "Date" },
+      { key: "item", label: "Item" },
+      { key: "unit", label: "Unit" },
+      { key: "qty", label: "Qty", num: true },
+      { key: "amount", label: "Amount ₹", money: true },
+      { key: "note", label: "Note" },
+    ],
+    load: (f, t) => rpc("report_inventory_purchases", f, t),
+  },
+
   {
     id: "monthly",
     label: "Monthly summary",
