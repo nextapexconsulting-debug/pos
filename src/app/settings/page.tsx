@@ -40,8 +40,13 @@ function Body() {
       const { data } = await supabase.from("shop_settings").select("*").maybeSingle();
       if (data) {
         if (data.theme) {
-          setTheme(data.theme as ThemeId);
-          applyTheme(data.theme as ThemeId);
+          {
+            const tid = (["ink_snow","charcoal_brass","night_snow"].includes(data.theme)
+              ? data.theme
+              : "ink_snow") as ThemeId;
+            setTheme(tid);
+            applyTheme(tid);
+          }
         }
         setNotify(data.notify_new_order !== false);
         setRent(String(data.rent_monthly ?? 25000));

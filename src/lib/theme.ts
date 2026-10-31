@@ -19,6 +19,20 @@ export function getThemeId(): ThemeId {
   if (typeof window === "undefined") return "ink_snow";
   const t = localStorage.getItem(KEY) as ThemeId | null;
   if (t && THEMES.some((x) => x.id === t)) return t;
+  const legacy: Record<string, ThemeId> = {
+    saffron_gold: "ink_snow",
+    sunset_orange: "ink_snow",
+    emerald_spice: "ink_snow",
+    royal_maroon: "charcoal_brass",
+    copper_bronze: "charcoal_brass",
+    deep_teal: "night_snow",
+    ocean_blue: "night_snow",
+    forest_green: "ink_snow",
+    royal_purple: "charcoal_brass",
+    midnight_slate: "night_snow",
+    rose_pink: "charcoal_brass",
+  };
+  if (t && legacy[t]) return legacy[t];
   return "ink_snow";
 }
 
