@@ -44,7 +44,7 @@ export default function PwaRegister() {
   if (standalone || !show) return null;
 
   return (
-    <div className="fixed bottom-20 md:bottom-4 left-3 right-3 z-50 max-w-sm mx-auto">
+    <div className="fixed bottom-4 right-3 z-40 max-w-xs">
       <div
         className="bg-white border-2 rounded-2xl shadow-xl p-3"
         style={{ borderColor: "var(--pos-primary)" }}

@@ -103,6 +103,8 @@ function VoicePOS() {
   }, []);
 
   useEffect(() => {
+    // Voice / mic disabled — search & tap only
+    return;
     if (typeof window === "undefined") return;
 
     const ua = navigator.userAgent || "";
@@ -117,13 +119,7 @@ function VoicePOS() {
     setIsSupported(supported);
 
     if (!supported) {
-      // iOS Safari does not support Web Speech API
-      const isIOS = /iPhone|iPad|iPod/i.test(ua);
-      setError(
-        isIOS
-          ? "Voice not supported on iPhone Safari. Use Chrome on Android, or search/tap products."
-          : "Speech Recognition not supported. Use Chrome or Edge, or search/tap products."
-      );
+      // Voice removed from UI — no error banner
       return;
     }
 
@@ -632,11 +628,11 @@ function VoicePOS() {
   });
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex flex-col pb-36 md:pb-0">
+    <div className="min-h-screen text-slate-900 flex flex-col pb-36 md:pb-0 bg-slate-50">
       <AppHeader title="New Order" breadcrumb="New Order" />
 
       <main className="flex-1 flex flex-col md:flex-row max-w-6xl mx-auto w-full min-h-0">
-        {/* Left: Voice + Products */}
+        {/* Left: Products */}
         <section className="flex-1 p-3 flex flex-col gap-3 min-h-0 overflow-hidden">
           {lastOrder && (
             <div className="pos-soft-bg rounded-xl p-3 border pos-border flex items-center gap-2 shrink-0 flex-wrap">
@@ -674,50 +670,8 @@ function VoicePOS() {
             </div>
           )}
 
-          {/* Mic Control */}
-          <div className="pos-soft-bg rounded-xl p-3 flex items-center gap-4 border pos-border shrink-0">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleListening();
-              }}
-              disabled={!isSupported}
-              className={`relative w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all shrink-0 touch-manipulation ${
-                isListening
-                  ? "mic-active mic-pulse pos-btn text-white"
-                  : "bg-white border-2 pos-border pos-text hover:pos-soft-bg"
-              } ${!isSupported ? "opacity-50 cursor-not-allowed" : ""}`}
-              aria-label={isListening ? "Stop listening" : "Start voice"}
-            >
-              {isListening ? "🎙️" : "🎤"}
-            </button>
-            <div className="flex-1 min-w-0">
-              <p
-                className={`text-sm font-medium truncate ${
-                  isListening ? "pos-text" : "text-slate-500"
-                }`}
-              >
-                {status}
-              </p>
-              {(transcript || interimTranscript) && (
-                <p className="text-xs text-slate-500 truncate">
-                  {transcript}{" "}
-                  <span className="italic text-slate-400">{interimTranscript}</span>
-                </p>
-              )}
-              {lastAdded && (
-                <p className="text-xs pos-text truncate">✓ {lastAdded}</p>
-              )}
-              {error && <p className="text-xs text-red-500 truncate">{error}</p>}
-            </div>
-          </div>
-
-          {/* Search + Price Tabs + Products */}
-          
-          {/* Customer only — order items live in bottom sheet (mobile) / right panel (desktop) */}
-          <div className="bg-white rounded-xl border pos-border p-3 shadow-sm shrink-0 space-y-2">
+{/* Customer only — order items live in bottom sheet (mobile) / right panel (desktop) */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-sm shrink-0 space-y-2">
             <div className="text-sm font-semibold text-slate-800">Customer</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input
@@ -743,7 +697,7 @@ function VoicePOS() {
             )}
           </div>
 
-<div className="bg-white rounded-xl border pos-border flex flex-col flex-1 min-h-0 overflow-hidden shadow-sm">
+<div className="bg-white rounded-2xl border border-slate-200/80 flex flex-col flex-1 min-h-0 overflow-hidden shadow-sm">
             {/* Search bar */}
             <div className="p-2 border-b pos-border shrink-0 pos-soft-bg">
               <div className="relative">
@@ -794,12 +748,12 @@ function VoicePOS() {
                     : "No products in this range"}
                 </p>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {filteredProducts.map((p) => (
                     <button
                       key={p.id}
                       onClick={() => addProductManually(p.id)}
-                      className="bg-white hover:pos-soft-bg active:pos-soft-bg border pos-border rounded-xl px-3 py-3 text-left transition-colors shadow-sm"
+                      className="bg-white hover:shadow-md hover:border-[var(--pos-primary)] active:scale-[0.98] border border-slate-200/80 rounded-2xl px-3.5 py-3.5 text-left transition-all shadow-sm"
                     >
                       <div className="text-sm font-medium leading-tight text-slate-800">
                         {p.nameEn}
@@ -807,7 +761,7 @@ function VoicePOS() {
                       <div className="text-xs text-slate-500 truncate mt-0.5">
                         {p.nameGu}
                       </div>
-                      <div className="pos-text text-sm font-bold mt-1">
+                      <div className="pos-text text-base font-bold mt-1.5 tabular-nums">
                         ₹{p.price}
                       </div>
                     </button>
@@ -819,7 +773,7 @@ function VoicePOS() {
         </section>
 
         {/* Right: Current Order – sticky on mobile via fixed bottom bar */}
-        <section className="hidden md:flex w-full md:w-96 pos-soft-bg border-t md:border-t-0 md:border-l pos-border flex-col max-h-[50vh] md:max-h-none">
+        <section className="hidden md:flex w-full md:w-[22rem] bg-white border-t md:border-t-0 md:border-l border-slate-200/80 flex-col shadow-[-8px_0_24px_rgba(15,23,42,0.04)] max-h-[50vh] md:max-h-none">
           <div className="p-3 border-b pos-border flex items-center gap-2 shrink-0 bg-white">
             <h2 className="font-semibold flex-1 text-slate-800">Current Order</h2>
             {order.length > 0 && (
@@ -870,7 +824,7 @@ function VoicePOS() {
               <div className="text-center text-slate-400 py-8">
                 <div className="text-3xl mb-1">🛒</div>
                 <p className="text-sm">No items yet</p>
-                <p className="text-xs mt-1">Tap products or use mic</p>
+                <p className="text-xs mt-1">Tap products to add</p>
               </div>
             ) : (
               order.map((item) => (
