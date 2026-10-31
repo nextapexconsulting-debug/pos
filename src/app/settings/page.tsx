@@ -33,6 +33,7 @@ function Body() {
   const [newPlat, setNewPlat] = useState("");
   const [newPct, setNewPct] = useState("28");
   const [paymentQr, setPaymentQr] = useState("");
+  const [paymentRedirect, setPaymentRedirect] = useState(false);
 
   useEffect(() => {
     setTheme(getThemeId());
@@ -57,6 +58,7 @@ function Body() {
         setGstRate(String(data.gst_rate ?? 5));
         setInvoicePrefix(data.invoice_prefix || "INV");
         if (data.payment_qr) setPaymentQr(data.payment_qr);
+        setPaymentRedirect(data.payment_redirect === true);
         if (data.day_start_time) setDayStart(String(data.day_start_time).slice(0, 5));
         if (data.day_end_time) setDayEnd(String(data.day_end_time).slice(0, 5));
       }
@@ -99,6 +101,7 @@ function Body() {
       gst_rate: Number(gstRate) || 5,
       invoice_prefix: invoicePrefix.trim() || "INV",
       payment_qr: paymentQr || null,
+      payment_redirect: paymentRedirect,
       day_start_time: dayStart.length === 5 ? dayStart + ":00" : dayStart,
       day_end_time: dayEnd.length === 5 ? dayEnd + ":00" : dayEnd,
       updated_at: new Date().toISOString(),
@@ -214,8 +217,18 @@ function Body() {
       <div className={`${card} space-y-3`}>
         <h2 className="font-semibold">Payment scanner (UPI QR)</h2>
         <p className="text-xs text-slate-500">
-          Upload your UPI / bank QR image. After each order, staff/customer see amount + this
-          scanner on the Pay Now page.
+          Upload your UPI / bank QR image. Shown on Pay Now when redirect is enabled.
+        </p>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={paymentRedirect}
+            onChange={(e) => setPaymentRedirect(e.target.checked)}
+          />
+          Redirect to payment scanner after order (Okay)
+        </label>
+        <p className="text-xs text-slate-400">
+          Off = stay on New Order after placing. On = open Pay Now with amount + QR.
         </p>
         {paymentQr ? (
           <div className="flex flex-col items-center gap-2">

@@ -501,14 +501,20 @@ function VoicePOS() {
       customerMobile: custMobile,
     });
 
-    // Customer payment screen (QR + amount)
+    // Optional: Pay Now page (Configuration → redirect to payment scanner)
     try {
-      const params = new URLSearchParams({
-        orderNo: String(newOrderNumber),
-        total: String(saved.total),
-        id: String(saved.order_id || ""),
-      });
-      router.push(`/pay?${params.toString()}`);
+      const { data: payCfg } = await supabase
+        .from("shop_settings")
+        .select("payment_redirect")
+        .maybeSingle();
+      if (payCfg?.payment_redirect) {
+        const params = new URLSearchParams({
+          orderNo: String(newOrderNumber),
+          total: String(saved.total),
+          id: String(saved.order_id || ""),
+        });
+        router.push(`/pay?${params.toString()}`);
+      }
     } catch {}
 
     const now = new Date();
