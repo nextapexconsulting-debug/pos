@@ -53,7 +53,15 @@ function Body() {
       items: [{ name: "Test item", qty: 1, price: 0 }],
       total: 0,
     });
-    setMsg("Print dialog opened — pick your printer");
+    setMsg("Sent to Bluetooth (or print dialog if fallback)");
+  };
+
+  const forgetBt = () => {
+    try {
+      localStorage.removeItem("pos-bt-printer-id");
+      localStorage.removeItem("pos-bt-printer-name");
+    } catch {}
+    setMsg("Bluetooth printer forgotten — next print will ask once");
   };
 
   return (
@@ -64,6 +72,8 @@ function Body() {
           <b>Simple path:</b> set connection to <b>Bluetooth (direct)</b>. On Print, Chrome asks
           once for the printer, then sends the bill straight over Bluetooth — no print dialog.
           Needs <b>Chrome on Android</b> and a <b>BLE</b> thermal printer.
+          First print asks once; later prints use the same device in this browser session.
+          Pairing works but blank paper often means classic-Bluetooth-only hardware — then use System print.
         </p>
 
         <label className="flex items-center gap-2 text-sm">
@@ -268,6 +278,9 @@ function Body() {
           <button type="button" className={btn2} onClick={testPrint}>
             Test print
           </button>
+        <button type="button" className={btn2} onClick={forgetBt}>
+          Forget Bluetooth printer
+        </button>
         </div>
         {msg && <p className="text-sm text-slate-600">{msg}</p>}
       </div>

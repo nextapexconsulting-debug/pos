@@ -299,119 +299,223 @@ function buildEscPosBytes(
   push("");
   push("");
 
-  // ESC @ init, ESC a 1 center optional — keep left for simplicity
-  const out: number[] = [0x1b, 0x40];
-  const text = lines.join("\n") + "\n\n\n";
+  const out: number[] = [
+    0x1b, 0x40,       // init
+    0x1b, 0x61, 0x00, // left align
+  ];
+  const text = lines.join("\n") + "\n\n\n\n";
   for (let i = 0; i < text.length; i++) {
     const c = text.charCodeAt(i);
-    out.push(c < 128 ? c : 0x3f); // basic ASCII; non-ASCII → ?
+    if (c === 10) {
+      out.push(0x0a);
+    } else if (c < 128) {
+      out.push(c);
+    } else {
+      out.push(0x3f);
+    }
   }
-  // partial cut if supported
-  out.push(0x1d, 0x56, 0x00);
+  // feed extra lines (more reliable than cut on some BLE printers)
+  out.push(0x1b, 0x64, 0x04);
   return new Uint8Array(out);
 }
+
 
 const BT_UART_SERVICES = [
   "6e400001-b5a3-f393-e0a9-e50e24dcca9e", // Nordic UART
   "49535343-fe7d-4ae5-8fa9-9fafd205e455", // ISSC
   "0000ff00-0000-1000-8000-00805f9b34fb",
   "0000ffe0-0000-1000-8000-00805f9b34fb",
+  "0000fff0-0000-1000-8000-00805f9b34fb",
   "e7810a71-73ae-43b2-a6f2-08d78aa7c0c0",
+  "000018f0-0000-1000-8000-00805f9b34fb",
 ];
 
-async function findWriteCharacteristic(server: any) {
-  for (const svc of BT_UART_SERVICES) {
+/** Prefer known TX characteristic UUIDs (Nordic etc.) */
+const PREFERRED_WRITE_CHARS = [
+  "6e400002-b5a3-f393-e0a9-e50e24dcca9e", // Nordic UART RX (phone → printer)
+  "49535343-8841-43f4-a8d4-ecbe34729bb3",
+  "0000ffe1-0000-1000-8000-00805f9b34fb",
+  "0000ff02-0000-1000-8000-00805f9b34fb",
+  "0000fff2-0000-1000-8000-00805f9b34fb",
+];
+
+// Session cache — avoids Chrome picker on every print in same tab
+let _btDevice: any = null;
+let _btChar: any = null;
+
+async function collectWriteCharacteristics(server: any): Promise<any[]> {
+  const found: any[] = [];
+  const seen = new Set<string>();
+
+  const add = (ch: any) => {
+    if (!ch) return;
+    const id = String(ch.uuid || "");
+    if (seen.has(id)) return;
+    if (!(ch.properties?.write || ch.properties?.writeWithoutResponse)) return;
+    seen.add(id);
+    found.push(ch);
+  };
+
+  // Preferred UUIDs first
+  for (const uuid of PREFERRED_WRITE_CHARS) {
     try {
-      const service = await server.getPrimaryService(svc);
-      const chars = await service.getCharacteristics();
-      for (const ch of chars) {
-        if (ch.properties.write || ch.properties.writeWithoutResponse) {
-          return ch;
+      for (const svcUuid of BT_UART_SERVICES) {
+        try {
+          const service = await server.getPrimaryService(svcUuid);
+          add(await service.getCharacteristic(uuid));
+        } catch {
+          /* */
         }
       }
     } catch {
-      /* try next */
+      /* */
     }
   }
-  // last resort: any service/char that accepts write
+
+  // All services
   try {
     const services = await server.getPrimaryServices();
     for (const service of services) {
-      const chars = await service.getCharacteristics();
-      for (const ch of chars) {
-        if (ch.properties.write || ch.properties.writeWithoutResponse) {
-          return ch;
-        }
+      try {
+        const chars = await service.getCharacteristics();
+        for (const ch of chars) add(ch);
+      } catch {
+        /* */
       }
     }
   } catch {
     /* */
   }
-  return null;
+
+  // Sort preferred first
+  found.sort((a, b) => {
+    const ai = PREFERRED_WRITE_CHARS.indexOf(String(a.uuid).toLowerCase());
+    const bi = PREFERRED_WRITE_CHARS.indexOf(String(b.uuid).toLowerCase());
+    const as = ai === -1 ? 99 : ai;
+    const bs = bi === -1 ? 99 : bi;
+    return as - bs;
+  });
+  return found;
 }
 
 async function writeEscPosChunks(ch: any, data: Uint8Array) {
-  const chunk = 100;
+  // Many BLE printers only accept 20-byte ATT payloads
+  const chunk = 20;
   for (let i = 0; i < data.length; i += chunk) {
     const slice = data.slice(i, i + chunk);
-    if (ch.properties.writeWithoutResponse) {
-      await ch.writeValueWithoutResponse(slice);
-    } else {
-      await ch.writeValue(slice);
+    try {
+      if (ch.properties.writeWithoutResponse) {
+        await ch.writeValueWithoutResponse(slice);
+      } else {
+        await ch.writeValue(slice);
+      }
+    } catch {
+      try {
+        await ch.writeValue(slice);
+      } catch {
+        await ch.writeValueWithoutResponse(slice);
+      }
     }
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((r) => setTimeout(r, 40));
   }
 }
 
-/** One-tap: pick BLE printer (first time) and send bytes. */
+async function resolveBluetoothDevice(bt: any): Promise<any> {
+  // 1) Same-tab cache
+  if (_btDevice?.gatt) return _btDevice;
+
+  // 2) Previously allowed devices (no picker)
+  try {
+    const known: any[] = (await bt.getDevices?.()) || [];
+    const savedId = localStorage.getItem("pos-bt-printer-id") || "";
+    if (savedId) {
+      const match = known.find((d) => d.id === savedId);
+      if (match) {
+        _btDevice = match;
+        return match;
+      }
+    }
+    if (known.length) {
+      _btDevice = known[0];
+      return known[0];
+    }
+  } catch {
+    /* */
+  }
+
+  // 3) First time only — system picker
+  const device = await bt.requestDevice({
+    acceptAllDevices: true,
+    optionalServices: BT_UART_SERVICES,
+  });
+  _btDevice = device;
+  _btChar = null;
+  try {
+    localStorage.setItem("pos-bt-printer-id", device?.id || "");
+    localStorage.setItem("pos-bt-printer-name", device?.name || "");
+  } catch {
+    /* */
+  }
+  return device;
+}
+
+/** Direct BLE ESC/POS. Picker only when no cached/permitted device. */
 export async function printViaBluetoothEscpos(data: Uint8Array): Promise<void> {
   const bt = (navigator as any).bluetooth;
   if (!bt) {
-    throw new Error("This browser cannot use Bluetooth. Use Chrome on Android.");
+    throw new Error("Use Chrome on Android for Bluetooth print.");
   }
 
-  let device: any = null;
+  const device = await resolveBluetoothDevice(bt);
+  if (!device?.gatt) throw new Error("No Bluetooth printer");
+
+  let server: any;
   try {
-    const known: any[] = (await bt.getDevices?.()) || [];
-    // Prefer already-permitted device so we never prompt again
-    for (const d of known) {
-      if (d?.gatt) {
-        device = d;
-        break;
-      }
-    }
-    if (!device && known.length) device = known[0];
+    server = device.gatt.connected ? device.gatt : await device.gatt.connect();
   } catch {
-    device = null;
-  }
-
-  if (!device) {
-    // First time only — user picks printer once
-    device = await bt.requestDevice({
+    _btDevice = null;
+    _btChar = null;
+    // reconnect with picker once
+    const d2 = await bt.requestDevice({
       acceptAllDevices: true,
       optionalServices: BT_UART_SERVICES,
     });
+    _btDevice = d2;
+    server = await d2.gatt.connect();
     try {
-      localStorage.setItem("pos-bt-printer-id", device?.id || "");
-      localStorage.setItem("pos-bt-printer-name", device?.name || "");
-    } catch {}
+      localStorage.setItem("pos-bt-printer-id", d2?.id || "");
+    } catch {
+      /* */
+    }
   }
 
-  if (!device?.gatt) throw new Error("No Bluetooth printer selected");
+  // Wait for services
+  await new Promise((r) => setTimeout(r, 300));
 
-  const server = device.gatt.connected
-    ? device.gatt
-    : await device.gatt.connect();
-
-  const ch = await findWriteCharacteristic(server as any);
-  if (!ch) {
+  const chars = await collectWriteCharacteristics(server);
+  if (!chars.length) {
     throw new Error(
-      "Printer connected but has no BLE print channel. Use a BLE thermal printer, or System print + Pocket POS Lite for classic Bluetooth."
+      "Connected but no print channel. This printer may be classic Bluetooth only — use System print + Pocket POS Lite."
     );
   }
-  await writeEscPosChunks(ch as any, data);
-}
 
+  // Try cached char first, then all (some accept write but ignore data)
+  const ordered = _btChar
+    ? [_btChar, ...chars.filter((c) => c.uuid !== _btChar.uuid)]
+    : chars;
+
+  let lastErr: any = null;
+  for (const ch of ordered) {
+    try {
+      await writeEscPosChunks(ch, data);
+      _btChar = ch;
+      return;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error("Write to printer failed");
+}
 
 export async function printOrderReceipt(opts: {
   orderNo: number;
@@ -436,7 +540,9 @@ export async function printOrderReceipt(opts: {
           : cfg.copy2Label || "KOT";
       const bytes = buildEscPosBytes(opts, cfg, title);
       await printViaBluetoothEscpos(bytes);
-      if (cfg.printKot !== false && cfg.printInvoice !== false) {
+      // second copy only if explicitly 2 copies — double BT write often drops
+      if (cfg.copies === 2 && cfg.printKot !== false && cfg.printInvoice !== false) {
+        await new Promise((r) => setTimeout(r, 500));
         const kot = buildEscPosBytes(opts, cfg, cfg.copy2Label || "KOT");
         await printViaBluetoothEscpos(kot);
       }
