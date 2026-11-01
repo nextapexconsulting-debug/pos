@@ -319,7 +319,7 @@ const BT_UART_SERVICES = [
   "e7810a71-73ae-43b2-a6f2-08d78aa7c0c0",
 ];
 
-async function findWriteCharacteristic(server: BluetoothRemoteGATTServer) {
+async function findWriteCharacteristic(server: any) {
   for (const svc of BT_UART_SERVICES) {
     try {
       const service = await server.getPrimaryService(svc);
@@ -350,7 +350,7 @@ async function findWriteCharacteristic(server: BluetoothRemoteGATTServer) {
   return null;
 }
 
-async function writeEscPosChunks(ch: BluetoothRemoteGATTCharacteristic, data: Uint8Array) {
+async function writeEscPosChunks(ch: any, data: Uint8Array) {
   const chunk = 100;
   for (let i = 0; i < data.length; i += chunk) {
     const slice = data.slice(i, i + chunk);
@@ -370,19 +370,31 @@ export async function printViaBluetoothEscpos(data: Uint8Array): Promise<void> {
     throw new Error("This browser cannot use Bluetooth. Use Chrome on Android.");
   }
 
-  let device: BluetoothDevice | null = null;
+  let device: any = null;
   try {
-    const known: BluetoothDevice[] = (await bt.getDevices?.()) || [];
-    device = known.find((d) => d.gatt) || known[0] || null;
+    const known: any[] = (await bt.getDevices?.()) || [];
+    // Prefer already-permitted device so we never prompt again
+    for (const d of known) {
+      if (d?.gatt) {
+        device = d;
+        break;
+      }
+    }
+    if (!device && known.length) device = known[0];
   } catch {
     device = null;
   }
 
   if (!device) {
+    // First time only — user picks printer once
     device = await bt.requestDevice({
       acceptAllDevices: true,
       optionalServices: BT_UART_SERVICES,
     });
+    try {
+      localStorage.setItem("pos-bt-printer-id", device?.id || "");
+      localStorage.setItem("pos-bt-printer-name", device?.name || "");
+    } catch {}
   }
 
   if (!device?.gatt) throw new Error("No Bluetooth printer selected");
@@ -432,13 +444,20 @@ export async function printOrderReceipt(opts: {
     } catch (e: any) {
       const msg = e?.message || String(e);
       console.error("Bluetooth print failed", e);
+      // First pairing needed or BLE not available
+      if (/No Bluetooth|cancel|User cancelled|NotFound/i.test(msg)) {
+        alert(
+          "Select your printer once when Chrome asks. After that prints go direct with no questions.\n\n" +
+            msg
+        );
+        return;
+      }
       const useSystem = confirm(
         "Bluetooth print failed:\n" +
           msg +
-          "\n\nOK = open system print (Pocket POS Lite)\nCancel = stop"
+          "\n\nOK = system print\nCancel = stop"
       );
       if (!useSystem) return;
-      // fall through to system print
     }
   }
 
