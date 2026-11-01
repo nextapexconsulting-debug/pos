@@ -61,9 +61,9 @@ function Body() {
       <div className={`${card} space-y-3`}>
         <h2 className="font-semibold">Setup (this device)</h2>
         <p className="text-xs text-slate-500">
-          <b>Pocket POS Lite + Bluetooth:</b> GenZPOS does <b>not</b> scan Bluetooth itself.
-          Android must already see the printer. Use connection <b>System print</b>, then in the
-          print dialog choose <b>Pocket POS Lite</b> (not Save as PDF).
+          <b>Simple path:</b> set connection to <b>Bluetooth (direct)</b>. On Print, Chrome asks
+          once for the printer, then sends the bill straight over Bluetooth — no print dialog.
+          Needs <b>Chrome on Android</b> and a <b>BLE</b> thermal printer.
         </p>
 
         <label className="flex items-center gap-2 text-sm">
@@ -92,9 +92,9 @@ function Body() {
             value={cfg.connection}
             onChange={(e) => setCfg({ ...cfg, connection: e.target.value as Conn })}
           >
-            <option value="system">System print — Pocket POS Lite / Bluetooth (recommended)</option>
+            <option value="bluetooth">Bluetooth (direct — one tap, no dialog)</option>
+            <option value="system">System print (Pocket POS Lite dialog)</option>
             <option value="network">Network IP (ESC/POS port 9100)</option>
-            <option value="bluetooth">System print (same as above — use Pocket POS Lite)</option>
             <option value="none">None</option>
           </select>
         </div>

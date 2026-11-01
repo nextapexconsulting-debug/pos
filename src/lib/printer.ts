@@ -27,7 +27,7 @@ export interface PrinterCfg {
 const KEY = "pos-printer-cfg";
 export const defaultPrinterCfg: PrinterCfg = {
   enabled: false,
-  connection: "system",
+  connection: "bluetooth",
   networkHost: "",
   networkPort: "9100",
   paperWidth: "58",
@@ -258,6 +258,149 @@ function buildKotHtml(
     </div>`;
 }
 
+
+/** ESC/POS plain receipt (direct Bluetooth). */
+function buildEscPosBytes(
+  opts: {
+    orderNo: number;
+    items: { name: string; qty: number; price: number }[];
+    total: number;
+    parcel?: boolean;
+    jain?: boolean;
+    orderedAt?: string | Date | null;
+    customerName?: string | null;
+    customerMobile?: string | null;
+  },
+  cfg: PrinterCfg,
+  title: string
+): Uint8Array {
+  const lines: string[] = [];
+  const push = (s: string) => lines.push(s.slice(0, 32));
+  push(cfg.shopHeader || "Shop");
+  push(title);
+  push("------------------------");
+  push("Order #" + (opts.orderNo || ""));
+  push(formatOrderTime(opts.orderedAt));
+  if (opts.parcel) push("PARCEL");
+  if (opts.jain) push("JAIN");
+  if (opts.customerName) push(String(opts.customerName));
+  if (opts.customerMobile) push(String(opts.customerMobile));
+  push("------------------------");
+  for (const it of opts.items) {
+    push(`${it.qty}x ${it.name}`);
+    if (title.toLowerCase().includes("invoice") || title.toLowerCase().includes("customer") || title === "TAX INVOICE") {
+      push(`  Rs ${Math.round(it.price * it.qty)}`);
+    }
+  }
+  push("------------------------");
+  push(`TOTAL  Rs ${Math.round(opts.total)}`);
+  push("Thank you");
+  push("");
+  push("");
+  push("");
+
+  // ESC @ init, ESC a 1 center optional — keep left for simplicity
+  const out: number[] = [0x1b, 0x40];
+  const text = lines.join("\n") + "\n\n\n";
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    out.push(c < 128 ? c : 0x3f); // basic ASCII; non-ASCII → ?
+  }
+  // partial cut if supported
+  out.push(0x1d, 0x56, 0x00);
+  return new Uint8Array(out);
+}
+
+const BT_UART_SERVICES = [
+  "6e400001-b5a3-f393-e0a9-e50e24dcca9e", // Nordic UART
+  "49535343-fe7d-4ae5-8fa9-9fafd205e455", // ISSC
+  "0000ff00-0000-1000-8000-00805f9b34fb",
+  "0000ffe0-0000-1000-8000-00805f9b34fb",
+  "e7810a71-73ae-43b2-a6f2-08d78aa7c0c0",
+];
+
+async function findWriteCharacteristic(server: BluetoothRemoteGATTServer) {
+  for (const svc of BT_UART_SERVICES) {
+    try {
+      const service = await server.getPrimaryService(svc);
+      const chars = await service.getCharacteristics();
+      for (const ch of chars) {
+        if (ch.properties.write || ch.properties.writeWithoutResponse) {
+          return ch;
+        }
+      }
+    } catch {
+      /* try next */
+    }
+  }
+  // last resort: any service/char that accepts write
+  try {
+    const services = await server.getPrimaryServices();
+    for (const service of services) {
+      const chars = await service.getCharacteristics();
+      for (const ch of chars) {
+        if (ch.properties.write || ch.properties.writeWithoutResponse) {
+          return ch;
+        }
+      }
+    }
+  } catch {
+    /* */
+  }
+  return null;
+}
+
+async function writeEscPosChunks(ch: BluetoothRemoteGATTCharacteristic, data: Uint8Array) {
+  const chunk = 100;
+  for (let i = 0; i < data.length; i += chunk) {
+    const slice = data.slice(i, i + chunk);
+    if (ch.properties.writeWithoutResponse) {
+      await ch.writeValueWithoutResponse(slice);
+    } else {
+      await ch.writeValue(slice);
+    }
+    await new Promise((r) => setTimeout(r, 20));
+  }
+}
+
+/** One-tap: pick BLE printer (first time) and send bytes. */
+export async function printViaBluetoothEscpos(data: Uint8Array): Promise<void> {
+  const bt = (navigator as any).bluetooth;
+  if (!bt) {
+    throw new Error("This browser cannot use Bluetooth. Use Chrome on Android.");
+  }
+
+  let device: BluetoothDevice | null = null;
+  try {
+    const known: BluetoothDevice[] = (await bt.getDevices?.()) || [];
+    device = known.find((d) => d.gatt) || known[0] || null;
+  } catch {
+    device = null;
+  }
+
+  if (!device) {
+    device = await bt.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: BT_UART_SERVICES,
+    });
+  }
+
+  if (!device?.gatt) throw new Error("No Bluetooth printer selected");
+
+  const server = device.gatt.connected
+    ? device.gatt
+    : await device.gatt.connect();
+
+  const ch = await findWriteCharacteristic(server as any);
+  if (!ch) {
+    throw new Error(
+      "Printer connected but has no BLE print channel. Use a BLE thermal printer, or System print + Pocket POS Lite for classic Bluetooth."
+    );
+  }
+  await writeEscPosChunks(ch as any, data);
+}
+
+
 export async function printOrderReceipt(opts: {
   orderNo: number;
   items: { name: string; qty: number; price: number }[];
@@ -271,6 +414,34 @@ export async function printOrderReceipt(opts: {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
   const cfg = loadPrinterCfg();
+
+  // Direct Bluetooth (no system dialog) when connection = bluetooth
+  if (cfg.connection === "bluetooth" || cfg.connection === "none" && false) {
+    try {
+      const title =
+        cfg.printInvoice !== false
+          ? cfg.copy1Label || "TAX INVOICE"
+          : cfg.copy2Label || "KOT";
+      const bytes = buildEscPosBytes(opts, cfg, title);
+      await printViaBluetoothEscpos(bytes);
+      if (cfg.printKot !== false && cfg.printInvoice !== false) {
+        const kot = buildEscPosBytes(opts, cfg, cfg.copy2Label || "KOT");
+        await printViaBluetoothEscpos(kot);
+      }
+      return;
+    } catch (e: any) {
+      const msg = e?.message || String(e);
+      console.error("Bluetooth print failed", e);
+      const useSystem = confirm(
+        "Bluetooth print failed:\n" +
+          msg +
+          "\n\nOK = open system print (Pocket POS Lite)\nCancel = stop"
+      );
+      if (!useSystem) return;
+      // fall through to system print
+    }
+  }
+
   const widthMm = cfg.paperWidth === "80" ? 72 : 48;
   const copies = cfg.copies === 1 ? 1 : 2;
   const label1 = cfg.copy1Label || "CUSTOMER COPY";
