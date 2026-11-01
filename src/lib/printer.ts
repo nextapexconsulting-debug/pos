@@ -339,10 +339,21 @@ export async function printOrderReceipt(opts: {
   root.innerHTML = `
     <style>
       #pos-print-root {
-        position: absolute;
-        left: -10000px;
+        position: fixed;
+        left: 0;
         top: 0;
         width: ${widthMm}mm;
+        max-width: 100%;
+        background: #fff;
+        color: #000;
+        z-index: 99999;
+        /* visible briefly so Android/Pocket POS captures content (off-screen often = blank) */
+        opacity: 1;
+      }
+      @media screen {
+        #pos-print-root {
+          pointer-events: none;
+        }
       }
       #pos-print-root .sheet {
         font-family: ui-monospace, Menlo, Consolas, monospace;
@@ -411,7 +422,7 @@ export async function printOrderReceipt(opts: {
         break-after: page;
         height: 0;
       }
-      @page { margin: 3mm; size: auto; }
+      @page { margin: 2mm; size: auto; }
       @media print {
         html, body {
           height: auto !important;
@@ -456,6 +467,8 @@ export async function printOrderReceipt(opts: {
         cleanup();
         alert("Could not open print. Try again.");
       }
+      // Remove on-screen slip after dialog (Android often needs it visible during print)
+      setTimeout(cleanup, 1500);
       setTimeout(cleanup, 60_000);
     });
   });

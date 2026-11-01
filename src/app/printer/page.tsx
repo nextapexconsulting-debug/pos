@@ -61,8 +61,9 @@ function Body() {
       <div className={`${card} space-y-3`}>
         <h2 className="font-semibold">Setup (this device)</h2>
         <p className="text-xs text-slate-500">
-          Recommended: install printer drivers on the phone/PC, then use <b>System print</b>. That
-          works for Bluetooth and Wi‑Fi printers and fails least often.
+          <b>Pocket POS Lite + Bluetooth:</b> GenZPOS does <b>not</b> scan Bluetooth itself.
+          Android must already see the printer. Use connection <b>System print</b>, then in the
+          print dialog choose <b>Pocket POS Lite</b> (not Save as PDF).
         </p>
 
         <label className="flex items-center gap-2 text-sm">
@@ -91,9 +92,9 @@ function Body() {
             value={cfg.connection}
             onChange={(e) => setCfg({ ...cfg, connection: e.target.value as Conn })}
           >
-            <option value="system">System print (USB / Bluetooth / Wi‑Fi driver) — recommended</option>
+            <option value="system">System print — Pocket POS Lite / Bluetooth (recommended)</option>
             <option value="network">Network IP (ESC/POS port 9100)</option>
-            <option value="bluetooth">Web Bluetooth (Chrome Android)</option>
+            <option value="bluetooth">System print (same as above — use Pocket POS Lite)</option>
             <option value="none">None</option>
           </select>
         </div>
@@ -271,12 +272,16 @@ function Body() {
         {msg && <p className="text-sm text-slate-600">{msg}</p>}
       </div>
 
-      <div className={`${card} text-xs text-slate-600 space-y-1`}>
-        <p className="font-semibold text-slate-800">How to not fail</p>
-        <p>1. Pair the thermal printer in phone/PC Bluetooth or Wi‑Fi settings.</p>
-        <p>2. Choose <b>System print</b> here and save.</p>
-        <p>3. On Okay, the order receipt opens the system print dialog — pick your printer.</p>
-        <p>4. Network IP is optional later if you add a local print bridge.</p>
+      <div className={`${card} text-xs text-slate-600 space-y-2`}>
+        <p className="font-semibold text-slate-800">Pocket POS Lite (Bluetooth) — exact steps</p>
+        <p>1. Phone <b>Settings → Bluetooth</b> → pair the thermal printer (must show Connected).</p>
+        <p>2. Open <b>Pocket POS Lite</b> app → select that printer → run its <b>Test print</b> until paper moves.</p>
+        <p>3. In GenZPOS → Printer: enable printing, connection <b>System print</b>, paper <b>58 mm</b> → Save.</p>
+        <p>4. Tap <b>Test print</b> here. In the Android print screen:</p>
+        <p className="pl-3">• Printer = <b>Pocket POS Lite</b> (or your printer name) — <b>not</b> Save as PDF</p>
+        <p className="pl-3">• Paper size = 58mm / roll if listed</p>
+        <p className="pl-3">• Then Print</p>
+        <p>5. GenZPOS only opens that dialog — it cannot “search Bluetooth” by itself. If the dialog has no Pocket POS Lite, fix steps 1–2 first.</p>
       </div>
     </>
   );
