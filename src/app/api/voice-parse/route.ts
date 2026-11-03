@@ -11,7 +11,8 @@ type MenuItem = {
 type ParsedLine = { product_id: string; qty: number };
 
 function extractJson(text: string): unknown {
-  const trimmed = text.trim();
+  const trimmed = (text || "").trim();
+  if (!trimmed) return null;
   try {
     return JSON.parse(trimmed);
   } catch {
@@ -37,11 +38,196 @@ function extractJson(text: string): unknown {
   return null;
 }
 
+function buildPrompt(
+  mode: "order" | "stock_closing",
+  transcript: string,
+  menuSlim: { id: string; nameEn: string; nameGu: string; keywords: string[] }[]
+) {
+  if (mode === "stock_closing") {
+    return `You parse spoken CLOSING STOCK counts for a sandwich shop inventory.
+
+Speech (may be messy STT, Hinglish/Gujarati/English):
+"""${transcript.replace(/"/g, "'")}"""
+
+INVENTORY (use ONLY these product_id values):
+${JSON.stringify(menuSlim)}
+
+Return ONLY valid JSON, no markdown:
+{"items":[{"product_id":"<id>","qty":<number>}]}
+
+qty = remaining/closing amount (decimals allowed for kg).
+Map bread, butter, cheese, water bottle, pizza base carefully.
+Omit items you cannot map confidently. If nothing: {"items":[]}`;
+  }
+
+  return `You match a spoken food order to a fixed sandwich/pizza menu.
+
+Speech (speech-to-text errors common; Hinglish/Gujarati/Hindi/English OK):
+"""${transcript.replace(/"/g, "'")}"""
+
+MENU (use ONLY these product_id values — never invent ids):
+${JSON.stringify(menuSlim)}
+
+Return ONLY valid JSON, no markdown, no explanation:
+{"items":[{"product_id":"<id from menu>","qty":<integer>}]}
+
+Rules:
+- Prefer the MOST SPECIFIC product (Cheese Sandwich not plain Sandwich if "cheese" is said).
+- qty integer >= 1, default 1, max 50.
+- Merge duplicate product_ids by summing qty.
+- Ignore please, bhai, dena, order, give me.
+- If unsure about an item, omit it. If nothing matches: {"items":[]}`;
+}
+
+function normalizeItems(
+  parsed: { items?: ParsedLine[] } | null,
+  idSet: Set<string>,
+  mode: "order" | "stock_closing"
+) {
+  const qtyMap = new Map<string, number>();
+  for (const row of parsed?.items || []) {
+    const id = String(row?.product_id || "").trim();
+    if (!idSet.has(id)) continue;
+    let qty = Number(row?.qty);
+    if (!Number.isFinite(qty) || qty < 0) continue;
+    if (mode === "order") {
+      qty = Math.floor(qty) || 1;
+      if (qty > 50) qty = 50;
+    } else if (qty > 9999) qty = 9999;
+    qtyMap.set(id, (qtyMap.get(id) || 0) + qty);
+  }
+  return [...qtyMap.entries()].map(([product_id, qty]) => ({ product_id, qty }));
+}
+
+/** Anthropic Claude Messages API */
+async function callClaude(
+  key: string,
+  model: string,
+  prompt: string
+): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 1024,
+      temperature: 0,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+  const raw = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg =
+      raw?.error?.message ||
+      raw?.error?.type ||
+      `Claude HTTP ${res.status}`;
+    return { ok: false, error: String(msg) };
+  }
+  const parts = raw?.content;
+  const text = Array.isArray(parts)
+    ? parts.map((p: { text?: string }) => p.text || "").join("")
+    : "";
+  if (!text) return { ok: false, error: "Empty Claude reply" };
+  return { ok: true, text };
+}
+
+/** Google Gemini (optional fallback) */
+async function callGemini(
+  key: string,
+  model: string,
+  prompt: string
+): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 1024 },
+    }),
+  });
+  const raw = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return {
+      ok: false,
+      error: String(raw?.error?.message || `Gemini HTTP ${res.status}`),
+    };
+  }
+  const text =
+    raw?.candidates?.[0]?.content?.parts
+      ?.map((p: { text?: string }) => p.text || "")
+      .join("") || "";
+  if (!text) return { ok: false, error: "Empty Gemini reply" };
+  return { ok: true, text };
+}
+
+export async function GET() {
+  const claudeKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+
+  if (claudeKey) {
+    const model =
+      process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
+    const r = await callClaude(
+      claudeKey,
+      model,
+      'Reply with only this JSON: {"ok":true}'
+    );
+    if (r.ok) {
+      return NextResponse.json({
+        ok: true,
+        ai: true,
+        provider: "claude",
+        model,
+        keyPrefix: claudeKey.slice(0, 8) + "…",
+      });
+    }
+    return NextResponse.json({
+      ok: false,
+      ai: false,
+      provider: "claude",
+      error: r.error,
+    });
+  }
+
+  if (geminiKey) {
+    const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+    const r = await callGemini(
+      geminiKey,
+      model,
+      'Reply with only this JSON: {"ok":true}'
+    );
+    return NextResponse.json({
+      ok: r.ok,
+      ai: r.ok,
+      provider: "gemini",
+      model,
+      error: r.ok ? undefined : r.error,
+    });
+  }
+
+  return NextResponse.json({
+    ok: false,
+    ai: false,
+    error: "Set ANTHROPIC_API_KEY (preferred) or GEMINI_API_KEY on Vercel, then redeploy",
+  });
+}
+
 export async function POST(req: NextRequest) {
-  const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  if (!key) {
+  const claudeKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+
+  if (!claudeKey && !geminiKey) {
     return NextResponse.json(
-      { error: "GEMINI_API_KEY not set on server", items: [], ai: false },
+      {
+        error: "No AI key: set ANTHROPIC_API_KEY or GEMINI_API_KEY on Vercel + redeploy",
+        items: [],
+        ai: false,
+      },
       { status: 503 }
     );
   }
@@ -74,94 +260,79 @@ export async function POST(req: NextRequest) {
     nameGu: m.nameGu || "",
     keywords: (m.keywords || []).slice(0, 12),
   }));
+  const prompt = buildPrompt(mode, transcript, menuSlim);
+  const idSet = new Set(menuSlim.map((m) => m.id));
 
-  const orderPrompt = `You match spoken food orders to a fixed menu for an Indian sandwich/pizza shop.
-User said (speech-to-text; may have errors; Hinglish/Gujarati/Hindi/English):
-"""${transcript.replace(/"/g, "'")}"""
-
-MENU (ONLY these product ids are allowed):
-${JSON.stringify(menuSlim)}
-
-Rules:
-- Return ONLY valid JSON. No markdown.
-- Shape: {"items":[{"product_id":"<id from menu>","qty":<integer>}]}
-- qty >= 1. Default 1 if unclear. Max 50.
-- Prefer the MOST SPECIFIC product (e.g. Cheese Sandwich over plain Sandwich when "cheese" is said).
-- Do NOT guess weakly. If unsure about an item, omit it.
-- Multiple items OK. Merge same product_id by summing qty.
-- Ignore please, bhai, dena, order, give me.
-- If nothing is clear: {"items":[]}`;
-
-  const stockPrompt = `You parse spoken CLOSING STOCK counts for a sandwich shop.
-User said remaining/closing quantities (speech-to-text may be messy):
-"""${transcript.replace(/"/g, "'")}"""
-
-INVENTORY ITEMS (ONLY these ids):
-${JSON.stringify(menuSlim)}
-
-Typical names: bread (packet), butter (kg), cheese (kg), water bottle, pizza base (pieces).
-
-Rules:
-- Return ONLY JSON: {"items":[{"product_id":"<id>","qty":<number>}]}
-- qty = remaining/closing count (can be decimal for kg e.g. 2.5).
-- Map speech to the closest inventory item by name/keywords.
-- "water" / "bottle" → water item; "pizza" / "base" → pizza base; "bread" → bread.
-- If a number is spoken with an item, use that number as qty.
-- Omit items you cannot map confidently.
-- If nothing clear: {"items":[]}`;
-
-  const prompt = mode === "stock_closing" ? stockPrompt : orderPrompt;
-  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
-
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.05,
-          maxOutputTokens: 512,
-          responseMimeType: "application/json",
-        },
-      }),
-    });
-
-    const raw = await res.json();
-    if (!res.ok) {
-      const msg = raw?.error?.message || raw?.error?.status || `Gemini HTTP ${res.status}`;
-      return NextResponse.json({ error: msg, items: [], ai: false }, { status: 502 });
-    }
-
-    const text =
-      raw?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || "").join("") ||
-      "";
-
-    const parsed = extractJson(text) as { items?: ParsedLine[] } | null;
-    const idSet = new Set(menuSlim.map((m) => m.id));
-    const qtyMap = new Map<string, number>();
-
-    for (const row of parsed?.items || []) {
-      const id = String(row?.product_id || "").trim();
-      if (!idSet.has(id)) continue;
-      let qty = Number(row?.qty);
-      if (!Number.isFinite(qty) || qty < 0) continue;
-      if (mode === "order") {
-        qty = Math.floor(qty);
-        if (qty < 1) qty = 1;
-        if (qty > 50) qty = 50;
-      } else {
-        // stock can be decimal
-        if (qty > 9999) qty = 9999;
+  // Prefer Claude
+  if (claudeKey) {
+    const models = [
+      process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514",
+      "claude-sonnet-4-20250514",
+      "claude-3-5-sonnet-20241022",
+      "claude-3-5-haiku-20241022",
+    ];
+    const tried: string[] = [];
+    let lastErr = "";
+    for (const model of models) {
+      if (tried.includes(model)) continue;
+      tried.push(model);
+      const r = await callClaude(claudeKey, model, prompt);
+      if (!r.ok) {
+        lastErr = r.error;
+        if (/not_found|model/i.test(r.error)) continue;
+        return NextResponse.json(
+          { error: r.error, items: [], ai: false, provider: "claude", model },
+          { status: 502 }
+        );
       }
-      qtyMap.set(id, (qtyMap.get(id) || 0) + qty);
+      const items = normalizeItems(extractJson(r.text) as { items?: ParsedLine[] }, idSet, mode);
+      return NextResponse.json({
+        items,
+        source: "claude",
+        ai: true,
+        provider: "claude",
+        model,
+      });
     }
-
-    const items = [...qtyMap.entries()].map(([product_id, qty]) => ({ product_id, qty }));
-    return NextResponse.json({ items, source: "gemini", ai: true });
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Gemini request failed";
-    return NextResponse.json({ error: msg, items: [], ai: false }, { status: 502 });
+    return NextResponse.json(
+      {
+        error: lastErr || "Claude model failed",
+        items: [],
+        ai: false,
+        provider: "claude",
+        tried,
+      },
+      { status: 502 }
+    );
   }
+
+  // Gemini fallback only if no Claude key
+  const gModels = [
+    process.env.GEMINI_MODEL || "gemini-3.8-flash",
+    "gemini-3.8-flash",
+    "gemini-2.5-flash",
+  ];
+  for (const model of gModels) {
+    const r = await callGemini(geminiKey!, model, prompt);
+    if (!r.ok) {
+      if (/no longer available|not found/i.test(r.error)) continue;
+      return NextResponse.json(
+        { error: r.error, items: [], ai: false, provider: "gemini", model },
+        { status: 502 }
+      );
+    }
+    const items = normalizeItems(extractJson(r.text) as { items?: ParsedLine[] }, idSet, mode);
+    return NextResponse.json({
+      items,
+      source: "gemini",
+      ai: true,
+      provider: "gemini",
+      model,
+    });
+  }
+
+  return NextResponse.json(
+    { error: "All AI providers failed", items: [], ai: false },
+    { status: 502 }
+  );
 }
