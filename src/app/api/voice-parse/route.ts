@@ -9,6 +9,7 @@ type MenuItem = {
 };
 
 type ParsedLine = { product_id: string; qty: number };
+type CallResult = { ok: true; text: string } | { ok: false; error: string };
 
 function extractJson(text: string): unknown {
   const trimmed = (text || "").trim();
@@ -99,11 +100,7 @@ function normalizeItems(
   return [...qtyMap.entries()].map(([product_id, qty]) => ({ product_id, qty }));
 }
 
-async function callClaude(
-  key: string,
-  model: string,
-  prompt: string
-): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+async function callClaude(key: string, model: string, prompt: string): Promise<CallResult> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -132,13 +129,15 @@ async function callClaude(
   return { ok: true, text };
 }
 
-/** OpenAI ChatGPT */
-async function callOpenAI(
+/** Generic OpenAI-compatible chat completions (used by OpenAI and Groq) */
+async function callOpenAICompatible(
+  baseUrl: string,
+  label: string,
   key: string,
   model: string,
   prompt: string
-): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+): Promise<CallResult> {
+  const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -163,19 +162,25 @@ async function callOpenAI(
   if (!res.ok) {
     return {
       ok: false,
-      error: String(raw?.error?.message || `OpenAI HTTP ${res.status}`),
+      error: String(raw?.error?.message || `${label} HTTP ${res.status}`),
     };
   }
   const text = raw?.choices?.[0]?.message?.content || "";
-  if (!text) return { ok: false, error: "Empty OpenAI reply" };
+  if (!text) return { ok: false, error: `Empty ${label} reply` };
   return { ok: true, text };
 }
 
-async function callGemini(
-  key: string,
-  model: string,
-  prompt: string
-): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+/** OpenAI ChatGPT */
+function callOpenAI(key: string, model: string, prompt: string) {
+  return callOpenAICompatible("https://api.openai.com/v1", "OpenAI", key, model, prompt);
+}
+
+/** Groq (free tier, OpenAI-compatible) */
+function callGroq(key: string, model: string, prompt: string) {
+  return callOpenAICompatible("https://api.groq.com/openai/v1", "Groq", key, model, prompt);
+}
+
+async function callGemini(key: string, model: string, prompt: string): Promise<CallResult> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
   const res = await fetch(url, {
     method: "POST",
@@ -200,26 +205,31 @@ async function callGemini(
   return { ok: true, text };
 }
 
-type Provider = "claude" | "openai" | "gemini";
+type Provider = "claude" | "openai" | "gemini" | "groq";
+
+const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
 
 function pickProvider(): {
   provider: Provider;
   key: string;
 } | null {
-  // Explicit force: AI_PROVIDER=openai|claude|gemini
+  // Explicit force: AI_PROVIDER=openai|claude|gemini|groq
   const force = (process.env.AI_PROVIDER || "").toLowerCase().trim();
   const claudeKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
   const openAiKey = process.env.OPENAI_API_KEY || process.env.CHATGPT_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const groqKey = process.env.GROQ_API_KEY;
 
   if (force === "openai" && openAiKey) return { provider: "openai", key: openAiKey };
   if (force === "claude" && claudeKey) return { provider: "claude", key: claudeKey };
   if (force === "gemini" && geminiKey) return { provider: "gemini", key: geminiKey };
+  if (force === "groq" && groqKey) return { provider: "groq", key: groqKey };
 
-  // Default priority: Claude → ChatGPT → Gemini
+  // Default priority: Claude → ChatGPT → Gemini → Groq
   if (claudeKey) return { provider: "claude", key: claudeKey };
   if (openAiKey) return { provider: "openai", key: openAiKey };
   if (geminiKey) return { provider: "gemini", key: geminiKey };
+  if (groqKey) return { provider: "groq", key: groqKey };
   return null;
 }
 
@@ -230,7 +240,7 @@ export async function GET() {
       ok: false,
       ai: false,
       error:
-        "Set OPENAI_API_KEY (ChatGPT), ANTHROPIC_API_KEY (Claude), or GEMINI_API_KEY — then redeploy",
+        "Set GROQ_API_KEY, OPENAI_API_KEY (ChatGPT), ANTHROPIC_API_KEY (Claude), or GEMINI_API_KEY — then redeploy",
     });
   }
 
@@ -245,6 +255,17 @@ export async function GET() {
       model,
       error: r.ok ? undefined : r.error,
       keyPrefix: key.slice(0, 7) + "…",
+    });
+  }
+  if (provider === "groq") {
+    const model = process.env.GROQ_MODEL || GROQ_DEFAULT_MODEL;
+    const r = await callGroq(key, model, 'Reply with only this JSON: {"ok":true}');
+    return NextResponse.json({
+      ok: r.ok,
+      ai: r.ok,
+      provider: "groq",
+      model,
+      error: r.ok ? undefined : r.error,
     });
   }
   if (provider === "claude") {
@@ -275,7 +296,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "No AI key: set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY on Vercel + redeploy",
+          "No AI key: set GROQ_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY on Vercel + redeploy",
         items: [],
         ai: false,
       },
@@ -346,6 +367,39 @@ export async function POST(req: NextRequest) {
     if (!text) {
       return NextResponse.json(
         { error: lastErr || "OpenAI failed", items: [], ai: false, provider: "openai", tried },
+        { status: 502 }
+      );
+    }
+  } else if (provider === "groq") {
+    // Fallback chain: if a model is retired/unavailable, try the next one
+    const models = [
+      process.env.GROQ_MODEL || GROQ_DEFAULT_MODEL,
+      GROQ_DEFAULT_MODEL,
+      "openai/gpt-oss-120b",
+      "llama-3.1-8b-instant",
+    ];
+    const tried: string[] = [];
+    let lastErr = "";
+    for (const m of models) {
+      if (tried.includes(m)) continue;
+      tried.push(m);
+      const r = await callGroq(key, m, prompt);
+      if (!r.ok) {
+        lastErr = r.error;
+        // Model problems → try next model. Rate limit / auth → stop.
+        if (/model|not found|decommissioned|invalid/i.test(r.error)) continue;
+        return NextResponse.json(
+          { error: r.error, items: [], ai: false, provider: "groq", model: m },
+          { status: 502 }
+        );
+      }
+      text = r.text;
+      model = m;
+      break;
+    }
+    if (!text) {
+      return NextResponse.json(
+        { error: lastErr || "Groq failed", items: [], ai: false, provider: "groq", tried },
         { status: 502 }
       );
     }
