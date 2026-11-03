@@ -84,10 +84,56 @@ function Body() {
   }, []);
 
   const handleHeard = useCallback(
-    (text: string) => {
+    async (text: string) => {
       const clean = text.trim();
       if (!clean) return;
       setTranscript(clean);
+
+      // 1) Gemini AI (server) when key is configured
+      try {
+        const res = await fetch("/api/voice-parse", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            transcript: clean,
+            menu: productsRef.current.map((p) => ({
+              id: p.id,
+              nameEn: p.nameEn,
+              nameGu: p.nameGu,
+              keywords: p.keywords,
+              price: p.price,
+            })),
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.items) && data.items.length > 0) {
+          const byId = new Map(productsRef.current.map((p) => [p.id, p]));
+          const matched: OrderItem[] = [];
+          for (const row of data.items) {
+            const product = byId.get(String(row.product_id));
+            const qty = Math.max(1, Math.floor(Number(row.qty) || 1));
+            if (product) matched.push({ product, quantity: qty });
+          }
+          if (matched.length) {
+            mergeItems(matched);
+            setSuggestions([]);
+            setStatus(
+              "AI: " + matched.map((m) => `${m.quantity}× ${m.product.nameEn}`).join(", ")
+            );
+            return;
+          }
+        }
+        // 503 = no key — silent fall through to local
+        if (res.status === 503) {
+          /* local match */
+        } else if (data.error && res.status !== 503) {
+          setStatus("AI: " + data.error + " — trying local match…");
+        }
+      } catch {
+        /* offline / network — local match */
+      }
+
+      // 2) Local fuzzy match
       const matched = parseSpokenOrder(clean, productsRef.current);
       if (matched.length) {
         mergeItems(matched);
@@ -101,7 +147,7 @@ function Body() {
         setStatus(
           sug.length
             ? "Not sure — tap a product below (or speak again)"
-            : "No match — speak closer to menu name, or tap Search"
+            : "No match — speak closer to menu name, or type below"
         );
       }
     },
