@@ -6,7 +6,7 @@ import PageShell, { card, input, btn, btn2, Table } from "@/components/PageShell
 import { supabase, todayIST, addDays, inr } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
 
-const PRESETS = ["Vegetables", "Tea", "Salary", "Gas", "Electricity", "Rent", "Misc"];
+const PRESETS = ["vegetables", "tea", "salary", "gas", "electricity", "rent", "misc"] as const;
 
 interface Exp {
   id: string;
@@ -27,6 +27,7 @@ export default function ExpensesPage() {
 }
 
 function Body() {
+  const { t } = useT();
   const [from, setFrom] = useState(todayIST().slice(0, 8) + "01");
   const [to, setTo] = useState(todayIST());
   const [rows, setRows] = useState<Exp[]>([]);
@@ -101,39 +102,38 @@ function Body() {
       <div className={`${card} grid grid-cols-2 gap-3 text-center`}>
         <div>
           <div className="text-2xl font-bold text-red-500">{inr(total)}</div>
-          <div className="text-xs text-slate-500">Total cost (period)</div>
+          <div className="text-xs text-slate-500">{t("total_cost_period")}</div>
         </div>
         <div>
           <div className="text-2xl font-bold text-slate-800">{rows.length}</div>
-          <div className="text-xs text-slate-500">Entries</div>
+          <div className="text-xs text-slate-500">{t("entries")}</div>
         </div>
       </div>
 
       <form onSubmit={add} className={`${card} space-y-3`}>
-        <h2 className="font-semibold text-sm">Add expense (shop cost only)</h2>
+        <h2 className="font-semibold text-sm">{t("add_expense_shop")}</h2>
         <p className="text-xs text-slate-500">
-          One line = one cost. Stock purchases are added from Stock page as a single purchase cost — not per menu item.
-        </p>
+          {t("expense_hint")}</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <input type="date" className={input} value={date} max={todayIST()} onChange={(e) => setDate(e.target.value)} />
-          <input className={input} list="exp-cats" placeholder="Category" value={cat} onChange={(e) => setCat(e.target.value)} required />
+          <input className={input} list="exp-cats" placeholder={t("category")} value={cat} onChange={(e) => setCat(e.target.value)} required />
           <datalist id="exp-cats">
             {PRESETS.map((p) => (
-              <option key={p} value={p} />
+              <option key={p} value={t(p)} />
             ))}
           </datalist>
-          <input className={input} type="number" min="0" step="1" placeholder="Amount ₹" value={amt} onChange={(e) => setAmt(e.target.value)} required />
-          <input className={input} placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+          <input className={input} type="number" min="0" step="1" placeholder={t("amount_rs")} value={amt} onChange={(e) => setAmt(e.target.value)} required />
+          <input className={input} placeholder={t("note_optional")} value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
         <div className="flex flex-wrap gap-1.5">
           {PRESETS.map((p) => (
-            <button type="button" key={p} onClick={() => setCat(p)} className={btn2 + " !text-xs !py-1"}>
-              {p}
+            <button type="button" key={p} onClick={() => setCat(t(p))} className={btn2 + " !text-xs !py-1"}>
+              {t(p)}
             </button>
           ))}
         </div>
         <button className={btn} disabled={busy}>
-          {busy ? "Saving…" : "Add expense"}
+          {busy ? t("loading") : t("add_expense")}
         </button>
       </form>
 
@@ -151,8 +151,8 @@ function Body() {
 
       {byCat.length > 0 && (
         <div className={card}>
-          <h2 className="font-semibold text-sm mb-2">By category</h2>
-          <Table cols={[{ key: "category", label: "Category" }, { key: "amount", label: "Total", money: true }]} rows={byCat} totals />
+          <h2 className="font-semibold text-sm mb-2">{t("category")}</h2>
+          <Table cols={[{ key: "category", label: t("category") }, { key: "amount", label: t("total"), money: true }]} rows={byCat} totals />
         </div>
       )}
 

@@ -33,6 +33,7 @@ export default function StockPage() {
 }
 
 function Body() {
+  const { t } = useT();
   const [date, setDate] = useState(todayIST());
   const [sheet, setSheet] = useState<Sheet[]>([]);
   const [closing, setClosing] = useState<Record<string, string>>({});
@@ -104,7 +105,7 @@ function Body() {
       .filter(([, v]) => v !== "" && !isNaN(Number(v)))
       .map(([item_id, v]) => ({ item_id, count_date: date, closing_qty: Number(v) }));
     if (!rows.length) {
-      alert("Enter at least one closing count");
+      alert(t("enter_closing"));
       return;
     }
     setBusy(true);
@@ -112,7 +113,7 @@ function Body() {
     setBusy(false);
     if (error) alert(error.message);
     else {
-      setMsg("Closing saved — this becomes tomorrow's opening");
+      setMsg(t("closing_saved"));
       load();
     }
   };
@@ -137,7 +138,7 @@ function Body() {
   };
 
   const delIn = async (id: string) => {
-    if (!confirm("Delete this purchase? Related expense is removed too.")) return;
+    if (!confirm(t("delete_purchase"))) return;
     const { error } = await supabase.from("stock_in").delete().eq("id", id);
     if (error) alert(error.message);
     else load();
@@ -157,7 +158,7 @@ function Body() {
   return (
     <>
       <div className="flex flex-wrap gap-2 items-center">
-        <label className="text-sm text-slate-600">Business day</label>
+        <label className="text-sm text-slate-600">{t("business_day")}</label>
         <input
           type="date"
           className={input + " !w-auto"}
@@ -176,32 +177,32 @@ function Body() {
       <div className={`${card} grid grid-cols-2 gap-2 text-center`}>
         <div>
           <div className="text-lg font-bold text-red-500">{inr(dayPurchaseCost)}</div>
-          <div className="text-[11px] text-slate-500">Stock purchase cost today</div>
+          <div className="text-[11px] text-slate-500">{t("stock_purchase_today")}</div>
         </div>
         <div>
           <div className="text-lg font-bold text-slate-800">{ins.length}</div>
-          <div className="text-[11px] text-slate-500">Purchase entries</div>
+          <div className="text-[11px] text-slate-500">{t("purchase_entries")}</div>
         </div>
       </div>
 
       {/* Day sheet */}
       <div className={card}>
-        <h2 className="font-semibold text-sm mb-1">Today&apos;s stock (easy steps)</h2>
+        <h2 className="font-semibold text-sm mb-1">{t("stock_title_steps")}</h2>
         <ol className="text-xs text-slate-600 mb-3 list-decimal pl-4 space-y-0.5">
-          <li><b>Opening</b> is yesterday&apos;s remaining (auto).</li>
-          <li>Add <b>New stock</b> below if something arrived (qty + ₹ paid).</li>
-          <li>At close, type what is <b>left</b> in Closing and Save.</li>
-          <li>Remaining carries to tomorrow automatically.</li>
+          <li>{t("stock_step1")}</li>
+          <li>{t("stock_step2")}</li>
+          <li>{t("stock_step3")}</li>
+          <li>{t("stock_step4")}</li>
         </ol>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-slate-500 border-b pos-border">
-                <th className="text-left py-2 px-1">Item</th>
-                <th className="text-right px-1">Opening</th>
-                <th className="text-right px-1">+ New</th>
-                <th className="text-right px-1">Closing</th>
-                <th className="text-right px-1">Used</th>
+                <th className="text-left py-2 px-1">{t("item")}</th>
+                <th className="text-right px-1">{t("opening")}</th>
+                <th className="text-right px-1">{t("stock_new")}</th>
+                <th className="text-right px-1">{t("closing")}</th>
+                <th className="text-right px-1">{t("used")}</th>
               </tr>
             </thead>
             <tbody>
@@ -250,7 +251,7 @@ function Body() {
           </table>
         </div>
         <button type="button" className={btn + " mt-3 w-full sm:w-auto"} disabled={busy} onClick={saveClosing}>
-          {busy ? "Saving…" : "Save closing counts"}
+          {busy ? "Saving…" : "{t("save_closing")}"}
         </button>
       </div>
 
@@ -280,7 +281,7 @@ function Body() {
 
       {ins.length > 0 && (
         <div className={card}>
-          <h2 className="font-semibold text-sm mb-2">Purchases this day</h2>
+          <h2 className="font-semibold text-sm mb-2">{t("purchase_entries")}</h2>
           <ul className="divide-y divide-[var(--pos-soft)] text-sm">
             {ins.map((x) => (
               <li key={x.id} className="py-2 flex items-center gap-2">
