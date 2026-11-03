@@ -251,7 +251,7 @@ function Body() {
           </table>
         </div>
         <button type="button" className={btn + " mt-3 w-full sm:w-auto"} disabled={busy} onClick={saveClosing}>
-          {busy ? "Saving…" : "{t("save_closing")}"}
+          {busy ? t("loading") : t("save_closing")}
         </button>
       </div>
 
