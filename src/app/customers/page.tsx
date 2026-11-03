@@ -1,10 +1,11 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import PageShell, { card, input, btn2 } from "@/components/PageShell";
 import { supabase, todayIST, addDays, inr } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
 
 type Row = {
   customer_id: string;

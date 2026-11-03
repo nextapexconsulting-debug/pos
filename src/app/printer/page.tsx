@@ -1,9 +1,10 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { useEffect, useState } from "react";
 import PageShell, { card, input, btn, btn2 } from "@/components/PageShell";
 import {
+import { useT } from "@/lib/i18n";
   loadPrinterCfg,
   savePrinterCfg,
   defaultPrinterCfg,

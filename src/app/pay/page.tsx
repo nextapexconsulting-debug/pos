@@ -1,11 +1,12 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase, inr } from "@/lib/supabase";
 import AppHeader from "@/components/AppHeader";
 import AuthGate from "@/components/AuthGate";
+import { useT } from "@/lib/i18n";
 
 function PayBody() {
   const sp = useSearchParams();

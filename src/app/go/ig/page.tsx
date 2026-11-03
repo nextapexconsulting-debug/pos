@@ -1,8 +1,9 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { useT } from "@/lib/i18n";
 
 /**
  * QR lands here → try Instagram app, then browser profile.

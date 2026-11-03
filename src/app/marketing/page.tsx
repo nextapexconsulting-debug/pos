@@ -1,9 +1,10 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { useEffect, useMemo, useState } from "react";
 import PageShell, { card, input, btn, btn2 } from "@/components/PageShell";
 import { supabase } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
 
 function qrUrl(data: string, size = 240) {
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;

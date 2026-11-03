@@ -1,9 +1,10 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { useCallback, useEffect, useState } from "react";
 import PageShell, { card, input, btn2, Table } from "@/components/PageShell";
 import { supabase, todayIST, addDays, fetchBusinessDay, inr } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
 
 type Detail = {
   id: string;

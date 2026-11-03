@@ -4,6 +4,7 @@ import { ReactNode, Suspense } from "react";
 import { usePathname } from "next/navigation";
 import AuthGate from "./AuthGate";
 import AppHeader from "./AppHeader";
+import { useT, NAV_I18N, t as tStatic } from "@/lib/i18n";
 
 export const card = "bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm";
 export const input =
@@ -45,12 +46,16 @@ export default function PageShell({
   children: ReactNode;
 }) {
   const pathname = usePathname() || "/";
-  const crumb = CRUMBS[pathname] || title;
+  const { t } = useT();
+  const key = NAV_I18N[pathname];
+  const translatedTitle = key ? t(key) : title;
+  const crumbKey = NAV_I18N[pathname];
+  const crumb = crumbKey ? t(crumbKey) : CRUMBS[pathname] || title;
 
   return (
     <AuthGate roles={roles}>
       <div className="min-h-screen bg-white text-slate-900">
-        <AppHeader title={title} breadcrumb={pathname === "/" ? undefined : crumb} />
+        <AppHeader title={translatedTitle} breadcrumb={pathname === "/" ? undefined : crumb} />
         <main className="max-w-5xl mx-auto p-3 sm:p-4 space-y-3">{children}</main>
       </div>
     </AuthGate>

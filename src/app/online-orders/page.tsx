@@ -1,9 +1,10 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { useCallback, useEffect, useState } from "react";
 import PageShell, { card, input, btn, btn2 } from "@/components/PageShell";
 import { supabase, fetchBusinessDay, inr } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
 
 type Plat = { id: string; name: string; commission_pct: number };
 type Row = {

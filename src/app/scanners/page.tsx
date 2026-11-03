@@ -1,9 +1,10 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { useEffect, useState } from "react";
 import PageShell, { card, input, btn, btn2 } from "@/components/PageShell";
 import { loadPrinterCfg, savePrinterCfg, type PrinterCfg } from "@/lib/printer";
+import { useT } from "@/lib/i18n";
 
 type Cfg = PrinterCfg & { customerQrUrl?: string };
 

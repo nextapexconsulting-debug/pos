@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccess, logout } from "./AuthGate";
 import { useRef, useEffect } from "react";
+import { useT, NAV_I18N } from "@/lib/i18n";
 
 type NavLink = { href: string; label: string };
 
@@ -12,6 +13,7 @@ function titleCase(s: string) {
 }
 
 export default function NavLinks() {
+  const { t } = useT();
   const a = useAccess();
   const owner = a.role === "owner";
   const detailsRef = useRef<HTMLDetailsElement>(null);
@@ -75,13 +77,13 @@ export default function NavLinks() {
     <div className="flex items-center gap-2 shrink-0">
       <Link href="/" className={pill}>
         <span className="text-base leading-none">+</span>
-        New Order
+        {t("nav_new_order")}
       </Link>
 
       <details ref={detailsRef} className="relative">
         <summary className={pill + " list-none cursor-pointer [&::-webkit-details-marker]:hidden"}>
           <span className="text-base leading-none">☰</span>
-          Menu
+          {t("nav_menu_btn")}
         </summary>
         <div className="absolute right-0 mt-2 w-60 max-h-[min(70vh,28rem)] overflow-y-auto rounded-2xl z-30 py-1.5 bg-white border border-slate-200/80 shadow-xl">
           <div className="px-3 py-2 border-b border-slate-100">
@@ -106,7 +108,7 @@ export default function NavLinks() {
                     if (detailsRef.current) detailsRef.current.open = false;
                   }}
                 >
-                  {titleCase(label)}
+                  {t(NAV_I18N[href] || label) || label}
                 </Link>
               </div>
             );
@@ -117,7 +119,7 @@ export default function NavLinks() {
             onClick={logout}
             className="mx-1.5 mb-1 w-[calc(100%-0.75rem)] text-left rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"
           >
-            Log Out
+            {t("nav_logout")}
           </button>
         </div>
       </details>

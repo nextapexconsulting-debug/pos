@@ -1,5 +1,5 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { useCallback, useEffect, useState } from "react";
 import PageShell, { card, input, btn2 } from "@/components/PageShell";
@@ -7,6 +7,7 @@ import { useAccess } from "@/components/AuthGate";
 import { supabase, todayIST, fetchBusinessDay, inr } from "@/lib/supabase";
 import { printOrderReceipt } from "@/lib/printer";
 import Link from "next/link";
+import { useT } from "@/lib/i18n";
 
 interface Item { name_en: string; qty: number; price: number; line_total: number }
 interface Order {

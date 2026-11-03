@@ -1,9 +1,10 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { useCallback, useEffect, useState } from "react";
 import PageShell, { card, input, btn, btn2, Table } from "@/components/PageShell";
 import { supabase, todayIST, addDays, inr, fetchAll, downloadCSV } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
 
 interface Shop { id: string; name: string; status: "active" | "blocked"; blocked_reason: string | null; fee_per_item: number; grace_days: number; created_at: string }
 interface Prof { id: string; email: string; full_name: string | null; role: string; shop_id: string | null; is_blocked: boolean }

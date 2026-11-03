@@ -1,11 +1,12 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import AuthGate from "@/components/AuthGate";
 import NavLinks from "@/components/NavLinks";
 import {
+import { useT } from "@/lib/i18n";
   Product,
   loadProducts,
   fetchShopProducts,

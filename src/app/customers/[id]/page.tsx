@@ -1,11 +1,12 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import PageShell, { card } from "@/components/PageShell";
 import { supabase, inr } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
 
 export default function CustomerDetailPage() {
   return (

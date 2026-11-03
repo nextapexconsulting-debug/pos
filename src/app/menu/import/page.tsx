@@ -1,10 +1,11 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { useState } from "react";
 import Link from "next/link";
 import PageShell, { card, btn, btn2, input } from "@/components/PageShell";
 import { loadProducts, saveShopProducts, makeProductId, makeKeywords, Product } from "@/lib/products";
+import { useT } from "@/lib/i18n";
 
 interface Row { nameEn: string; nameGu: string; price: number; use: boolean; check?: string }
 

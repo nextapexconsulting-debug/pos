@@ -1,11 +1,12 @@
-import { useT } from "@/lib/i18n";
 "use client";
+
 
 import { useCallback, useEffect, useState } from "react";
 import PageShell, { card, input, btn, btn2 } from "@/components/PageShell";
 import { useAccess } from "@/components/AuthGate";
 import { supabase, todayIST, inr } from "@/lib/supabase";
 import { Product, loadProducts, fetchShopProducts } from "@/lib/products";
+import { useT } from "@/lib/i18n";
 
 interface Item {
   id?: string;

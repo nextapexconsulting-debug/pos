@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import NavLinks from "./NavLinks";
+import { useT } from "@/lib/i18n";
 
 export default function AppHeader({
   title,
@@ -10,6 +11,7 @@ export default function AppHeader({
   title: string;
   breadcrumb?: string;
 }) {
+  const { t } = useT();
   return (
     <header
       className="sticky top-0 z-20 text-white"
@@ -29,7 +31,7 @@ export default function AppHeader({
       {breadcrumb && (
         <div className="px-4 sm:px-5 pb-2 text-[11px] text-white/55 truncate border-t border-white/10">
           <Link href="/" className="hover:text-white/90">
-            Home
+            {t("home")}
           </Link>
           <span className="mx-1.5 text-white/30">/</span>
           <span className="text-white/90 font-medium">{breadcrumb}</span>
