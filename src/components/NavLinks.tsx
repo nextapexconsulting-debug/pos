@@ -24,6 +24,7 @@ export default function NavLinks() {
       ? [{ href: "/admin", label: "Admin" }]
       : [
           { href: "/orders", label: "Orders" },
+          { href: "/voice-order", label: "Voice Order" },
           { href: "/online-orders", label: "Online Order" },
           { href: "/online-order-details", label: "Online Total Amount" },
           { href: "/orders/edit", label: "Edit Orders" },

@@ -16,6 +16,7 @@ const KEY = "pos-lang";
 type Dict = Record<string, string>;
 
 const en: Dict = {
+  nav_voice_order: "Voice Order",
   add_expense_shop: "Add expense (shop cost only)",
   add_item: "Add item",
   add_new_stock: "Add new stock (purchase)",
@@ -242,6 +243,7 @@ const en: Dict = {
 };
 
 const gu: Dict = {
+  nav_voice_order: "વોઇસ ઓર્ડર",
   add_expense_shop: "ખર્ચ ઉમેરો (ફક્ત દુકાન)",
   add_item: "આઇટમ ઉમેરો",
   add_new_stock: "નવો સ્ટોક ઉમેરો (ખરીદી)",
@@ -468,6 +470,7 @@ const gu: Dict = {
 };
 
 const hi: Dict = {
+  nav_voice_order: "वॉइस ऑर्डर",
   add_expense_shop: "खर्च जोड़ें (केवल दुकान)",
   add_item: "आइटम जोड़ें",
   add_new_stock: "नया स्टॉक जोड़ें (खरीद)",
@@ -694,6 +697,7 @@ const hi: Dict = {
 };
 
 const mr: Dict = {
+  nav_voice_order: "व्हॉइस ऑर्डर",
   add_expense_shop: "खर्च जोड़ें (केवल दुकान)",
   add_item: "आइटम जोड़ें",
   add_new_stock: "नया स्टॉक जोड़ें (खरीद)",
@@ -920,6 +924,7 @@ const mr: Dict = {
 };
 
 const ta: Dict = {
+  nav_voice_order: "குரல் ஆர்டர்",
   add_expense_shop: "Add expense (shop cost only)",
   add_item: "Add item",
   add_new_stock: "Add new stock (purchase)",
@@ -1207,6 +1212,7 @@ export function productSecondary(
 export const NAV_I18N: Record<string, string> = {
   "/admin": "nav_admin",
   "/orders": "nav_orders",
+  "/voice-order": "nav_voice_order",
   "/online-orders": "nav_online_order",
   "/online-order-details": "nav_online_total",
   "/orders/edit": "nav_edit_orders",

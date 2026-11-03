@@ -17,6 +17,7 @@ export const btn2 =
 const CRUMBS: Record<string, string> = {
   "/": "New Order",
   "/orders": "Orders",
+  "/voice-order": "Voice Order",
   "/orders/edit": "Edit Order",
   "/dashboard": "Today / Profit",
   "/expenses": "Expenses",
