@@ -11,6 +11,9 @@ type MenuItem = {
 type ParsedLine = { product_id: string; qty: number };
 type CallResult = { ok: true; text: string } | { ok: false; error: string };
 
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
+
 function extractJson(text: string): unknown {
   const trimmed = (text || "").trim();
   if (!trimmed) return null;
@@ -100,44 +103,8 @@ function normalizeItems(
   return [...qtyMap.entries()].map(([product_id, qty]) => ({ product_id, qty }));
 }
 
-async function callClaude(key: string, model: string, prompt: string): Promise<CallResult> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 1024,
-      temperature: 0,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-  const raw = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    return {
-      ok: false,
-      error: String(raw?.error?.message || raw?.error?.type || `Claude HTTP ${res.status}`),
-    };
-  }
-  const text = Array.isArray(raw?.content)
-    ? raw.content.map((p: { text?: string }) => p.text || "").join("")
-    : "";
-  if (!text) return { ok: false, error: "Empty Claude reply" };
-  return { ok: true, text };
-}
-
-/** Generic OpenAI-compatible chat completions (used by OpenAI and Groq) */
-async function callOpenAICompatible(
-  baseUrl: string,
-  label: string,
-  key: string,
-  model: string,
-  prompt: string
-): Promise<CallResult> {
-  const res = await fetch(`${baseUrl}/chat/completions`, {
+async function callGroq(key: string, model: string, prompt: string): Promise<CallResult> {
+  const res = await fetch(GROQ_URL, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -162,141 +129,45 @@ async function callOpenAICompatible(
   if (!res.ok) {
     return {
       ok: false,
-      error: String(raw?.error?.message || `${label} HTTP ${res.status}`),
+      error: String(raw?.error?.message || `Groq HTTP ${res.status}`),
     };
   }
   const text = raw?.choices?.[0]?.message?.content || "";
-  if (!text) return { ok: false, error: `Empty ${label} reply` };
+  if (!text) return { ok: false, error: "Empty Groq reply" };
   return { ok: true, text };
 }
 
-/** OpenAI ChatGPT */
-function callOpenAI(key: string, model: string, prompt: string) {
-  return callOpenAICompatible("https://api.openai.com/v1", "OpenAI", key, model, prompt);
-}
-
-/** Groq (free tier, OpenAI-compatible) */
-function callGroq(key: string, model: string, prompt: string) {
-  return callOpenAICompatible("https://api.groq.com/openai/v1", "Groq", key, model, prompt);
-}
-
-async function callGemini(key: string, model: string, prompt: string): Promise<CallResult> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.1, maxOutputTokens: 1024 },
-    }),
-  });
-  const raw = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    return {
-      ok: false,
-      error: String(raw?.error?.message || `Gemini HTTP ${res.status}`),
-    };
-  }
-  const text =
-    raw?.candidates?.[0]?.content?.parts
-      ?.map((p: { text?: string }) => p.text || "")
-      .join("") || "";
-  if (!text) return { ok: false, error: "Empty Gemini reply" };
-  return { ok: true, text };
-}
-
-type Provider = "claude" | "openai" | "gemini" | "groq";
-
-const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
-
-function pickProvider(): {
-  provider: Provider;
-  key: string;
-} | null {
-  // Explicit force: AI_PROVIDER=openai|claude|gemini|groq
-  const force = (process.env.AI_PROVIDER || "").toLowerCase().trim();
-  const claudeKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
-  const openAiKey = process.env.OPENAI_API_KEY || process.env.CHATGPT_API_KEY;
-  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  const groqKey = process.env.GROQ_API_KEY;
-
-  if (force === "openai" && openAiKey) return { provider: "openai", key: openAiKey };
-  if (force === "claude" && claudeKey) return { provider: "claude", key: claudeKey };
-  if (force === "gemini" && geminiKey) return { provider: "gemini", key: geminiKey };
-  if (force === "groq" && groqKey) return { provider: "groq", key: groqKey };
-
-  // Default priority: Claude → ChatGPT → Gemini → Groq
-  if (claudeKey) return { provider: "claude", key: claudeKey };
-  if (openAiKey) return { provider: "openai", key: openAiKey };
-  if (geminiKey) return { provider: "gemini", key: geminiKey };
-  if (groqKey) return { provider: "groq", key: groqKey };
-  return null;
+function getGroqKey(): string | null {
+  return process.env.GROQ_API_KEY || null;
 }
 
 export async function GET() {
-  const picked = pickProvider();
-  if (!picked) {
+  const key = getGroqKey();
+  if (!key) {
     return NextResponse.json({
       ok: false,
       ai: false,
-      error:
-        "Set GROQ_API_KEY, OPENAI_API_KEY (ChatGPT), ANTHROPIC_API_KEY (Claude), or GEMINI_API_KEY — then redeploy",
+      error: "Set GROQ_API_KEY — then redeploy",
     });
   }
 
-  const { provider, key } = picked;
-  if (provider === "openai") {
-    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-    const r = await callOpenAI(key, model, 'Reply with only this JSON: {"ok":true}');
-    return NextResponse.json({
-      ok: r.ok,
-      ai: r.ok,
-      provider: "openai",
-      model,
-      error: r.ok ? undefined : r.error,
-      keyPrefix: key.slice(0, 7) + "…",
-    });
-  }
-  if (provider === "groq") {
-    const model = process.env.GROQ_MODEL || GROQ_DEFAULT_MODEL;
-    const r = await callGroq(key, model, 'Reply with only this JSON: {"ok":true}');
-    return NextResponse.json({
-      ok: r.ok,
-      ai: r.ok,
-      provider: "groq",
-      model,
-      error: r.ok ? undefined : r.error,
-    });
-  }
-  if (provider === "claude") {
-    const model = process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
-    const r = await callClaude(key, model, 'Reply with only this JSON: {"ok":true}');
-    return NextResponse.json({
-      ok: r.ok,
-      ai: r.ok,
-      provider: "claude",
-      model,
-      error: r.ok ? undefined : r.error,
-    });
-  }
-  const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-  const r = await callGemini(key, model, 'Reply with only this JSON: {"ok":true}');
+  const model = process.env.GROQ_MODEL || GROQ_DEFAULT_MODEL;
+  const r = await callGroq(key, model, 'Reply with only this JSON: {"ok":true}');
   return NextResponse.json({
     ok: r.ok,
     ai: r.ok,
-    provider: "gemini",
+    provider: "groq",
     model,
     error: r.ok ? undefined : r.error,
   });
 }
 
 export async function POST(req: NextRequest) {
-  const picked = pickProvider();
-  if (!picked) {
+  const key = getGroqKey();
+  if (!key) {
     return NextResponse.json(
       {
-        error:
-          "No AI key: set GROQ_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY on Vercel + redeploy",
+        error: "No AI key: set GROQ_API_KEY on Vercel + redeploy",
         items: [],
         ai: false,
       },
@@ -334,103 +205,50 @@ export async function POST(req: NextRequest) {
   }));
   const prompt = buildPrompt(mode, transcript, menuSlim);
   const idSet = new Set(menuSlim.map((m) => m.id));
-  const { provider, key } = picked;
 
+  // Fallback chain: if a model is retired/unavailable, try the next one
+  const models = [
+    process.env.GROQ_MODEL || GROQ_DEFAULT_MODEL,
+    GROQ_DEFAULT_MODEL,
+    "openai/gpt-oss-120b",
+    "llama-3.1-8b-instant",
+  ];
+  const tried: string[] = [];
+  let lastErr = "";
   let text = "";
   let model = "";
 
-  if (provider === "openai") {
-    const models = [
-      process.env.OPENAI_MODEL || "gpt-4o-mini",
-      "gpt-4o-mini",
-      "gpt-4o",
-      "gpt-4.1-mini",
-    ];
-    const tried: string[] = [];
-    let lastErr = "";
-    for (const m of models) {
-      if (tried.includes(m)) continue;
-      tried.push(m);
-      const r = await callOpenAI(key, m, prompt);
-      if (!r.ok) {
-        lastErr = r.error;
-        if (/model|not found|invalid/i.test(r.error)) continue;
-        return NextResponse.json(
-          { error: r.error, items: [], ai: false, provider: "openai", model: m },
-          { status: 502 }
-        );
-      }
-      text = r.text;
-      model = m;
-      break;
-    }
-    if (!text) {
-      return NextResponse.json(
-        { error: lastErr || "OpenAI failed", items: [], ai: false, provider: "openai", tried },
-        { status: 502 }
-      );
-    }
-  } else if (provider === "groq") {
-    // Fallback chain: if a model is retired/unavailable, try the next one
-    const models = [
-      process.env.GROQ_MODEL || GROQ_DEFAULT_MODEL,
-      GROQ_DEFAULT_MODEL,
-      "openai/gpt-oss-120b",
-      "llama-3.1-8b-instant",
-    ];
-    const tried: string[] = [];
-    let lastErr = "";
-    for (const m of models) {
-      if (tried.includes(m)) continue;
-      tried.push(m);
-      const r = await callGroq(key, m, prompt);
-      if (!r.ok) {
-        lastErr = r.error;
-        // Model problems → try next model. Rate limit / auth → stop.
-        if (/model|not found|decommissioned|invalid/i.test(r.error)) continue;
-        return NextResponse.json(
-          { error: r.error, items: [], ai: false, provider: "groq", model: m },
-          { status: 502 }
-        );
-      }
-      text = r.text;
-      model = m;
-      break;
-    }
-    if (!text) {
-      return NextResponse.json(
-        { error: lastErr || "Groq failed", items: [], ai: false, provider: "groq", tried },
-        { status: 502 }
-      );
-    }
-  } else if (provider === "claude") {
-    model = process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
-    const r = await callClaude(key, model, prompt);
+  for (const m of models) {
+    if (tried.includes(m)) continue;
+    tried.push(m);
+    const r = await callGroq(key, m, prompt);
     if (!r.ok) {
+      lastErr = r.error;
+      // Model problems → try next model. Rate limit / auth → stop.
+      if (/model|not found|decommissioned|invalid/i.test(r.error)) continue;
       return NextResponse.json(
-        { error: r.error, items: [], ai: false, provider: "claude", model },
+        { error: r.error, items: [], ai: false, provider: "groq", model: m },
         { status: 502 }
       );
     }
     text = r.text;
-  } else {
-    model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-    const r = await callGemini(key, model, prompt);
-    if (!r.ok) {
-      return NextResponse.json(
-        { error: r.error, items: [], ai: false, provider: "gemini", model },
-        { status: 502 }
-      );
-    }
-    text = r.text;
+    model = m;
+    break;
+  }
+
+  if (!text) {
+    return NextResponse.json(
+      { error: lastErr || "Groq failed", items: [], ai: false, provider: "groq", tried },
+      { status: 502 }
+    );
   }
 
   const items = normalizeItems(extractJson(text) as { items?: ParsedLine[] }, idSet, mode);
   return NextResponse.json({
     items,
-    source: provider,
+    source: "groq",
     ai: true,
-    provider,
+    provider: "groq",
     model,
   });
 }
