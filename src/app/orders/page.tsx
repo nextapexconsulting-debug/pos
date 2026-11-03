@@ -27,6 +27,8 @@ export default function OrdersPage() {
 }
 
 function Orders() {
+  const { t } = useT();
+
   const me = useAccess();
   const owner = me.role === "owner";
   const [date, setDate] = useState(todayIST());
@@ -51,6 +53,8 @@ function Orders() {
   useEffect(() => { load(); }, [load]);
 
   const act = async (fn: string, args: Record<string, unknown>) => {
+  const { t } = useT();
+
     const { error } = await supabase.rpc(fn, args);
     if (error) alert(error.message); else load();
   };

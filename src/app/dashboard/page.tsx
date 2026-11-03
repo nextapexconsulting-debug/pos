@@ -22,6 +22,8 @@ export default function Dashboard() {
 }
 
 function Body() {
+  const { t } = useT();
+
   const [date, setDate] = useState(todayIST());
   useEffect(() => { fetchBusinessDay().then(setDate); }, []);
   const [d, setD] = useState<Day | null>(null);

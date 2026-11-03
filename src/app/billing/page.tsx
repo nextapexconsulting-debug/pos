@@ -27,15 +27,17 @@ type DayCost = {
 const SINCE = "2026-10-14";
 
 export default function BillingPage() {
-  const { t } = useT();
+  const { t: tt } = useT();
   return (
-    <PageShell title={t("billing")} roles={["owner"]}>
+    <PageShell title={tt("billing")} roles={["owner"]}>
       <Body />
     </PageShell>
   );
 }
 
 function Body() {
+  const { t: tt } = useT();
+
   const [rows, setRows] = useState<Inv[]>([]);
   const [daily, setDaily] = useState<DayCost[]>([]);
   const [err, setErr] = useState("");
@@ -140,7 +142,7 @@ function Body() {
         <div className="grid grid-cols-3 gap-2 text-center text-sm">
           <div className="rounded-lg border pos-border p-2">
             <div className="font-bold">{orderTotal}</div>
-            <div className="text-[11px] text-slate-500">{t("orders")}</div>
+            <div className="text-[11px] text-slate-500">{tt("orders")}</div>
           </div>
           <div className="rounded-lg border pos-border p-2">
             <div className="font-bold">{inr(salesTotal)}</div>

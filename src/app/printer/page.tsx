@@ -25,6 +25,7 @@ export default function PrinterPage() {
 }
 
 function Body() {
+  const { t } = useT();
   const [cfg, setCfg] = useState<Cfg>(defaultPrinterCfg);
   const [msg, setMsg] = useState("");
   const [btSupported, setBtSupported] = useState(false);

@@ -9,6 +9,8 @@ import { supabase, inr } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
 
 export default function CustomerDetailPage() {
+  const { t } = useT();
+
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-slate-400 text-sm">{t("loading")}</div>}>
       <CustomerDetailInner />
@@ -17,6 +19,8 @@ export default function CustomerDetailPage() {
 }
 
 function CustomerDetailInner() {
+  const { t } = useT();
+
   return (
     <PageShell title="Customer history" roles={["owner", "staff"]}>
       <Body />
@@ -25,6 +29,8 @@ function CustomerDetailInner() {
 }
 
 function Body() {
+  const { t } = useT();
+
   const params = useParams();
   const id = String(params?.id ?? "");
   const [cust, setCust] = useState<{ name: string; mobile: string; notes: string | null } | null>(null);

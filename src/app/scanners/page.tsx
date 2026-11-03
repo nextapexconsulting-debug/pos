@@ -31,6 +31,8 @@ export default function ScannersPage() {
 }
 
 function Body() {
+  const { t } = useT();
+
   const [cfg, setCfg] = useState<Cfg | null>(null);
   const [preview, setPreview] = useState<{ label: string; url: string; dataUrl: string }[]>([]);
   const [msg, setMsg] = useState("");
@@ -176,6 +178,8 @@ function Body() {
     `;
     document.body.appendChild(root);
     const cleanup = () => {
+  const { t } = useT();
+
       document.getElementById("pos-qr-sheet")?.remove();
       window.removeEventListener("afterprint", cleanup);
     };

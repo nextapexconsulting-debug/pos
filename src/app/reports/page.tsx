@@ -258,15 +258,16 @@ const REPORTS: Rep[] = [
 ];
 
 export default function ReportsPage() {
-  const { t } = useT();
+  const { t: tt } = useT();
   return (
-    <PageShell title={t("reports")} roles={["owner"]}>
+    <PageShell title={tt("reports")} roles={["owner"]}>
       <Body />
     </PageShell>
   );
 }
 
 function Body() {
+  const { t: tt } = useT();
   const [id, setId] = useState("daily");
   const [from, setFrom] = useState(todayIST().slice(0, 8) + "01");
   const [to, setTo] = useState(todayIST());
@@ -652,7 +653,7 @@ function Body() {
           </button>
         </div>
         {busy ? (
-          <p className="text-slate-500 text-sm py-6 text-center">{t("loading")}</p>
+          <p className="text-slate-500 text-sm py-6 text-center">{tt("loading")}</p>
         ) : err ? (
           <p className="text-red-500 text-sm">{err}</p>
         ) : (

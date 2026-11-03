@@ -26,6 +26,8 @@ export default function CustomersPage() {
 }
 
 function Body() {
+  const { t } = useT();
+
   const [from, setFrom] = useState(addDays(todayIST(), -90));
   const [to, setTo] = useState(todayIST());
   const [rows, setRows] = useState<Row[]>([]);

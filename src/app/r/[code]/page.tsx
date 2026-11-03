@@ -6,6 +6,9 @@ import { Suspense, useState } from "react";
 import { useT } from "@/lib/i18n";
 
 export default function PublicOrderPage() {
+  const { t } = useT();
+  
+
   return (
     <Suspense fallback={<div className="p-8 text-center text-slate-400">{t("loading")}</div>}>
       <Form />

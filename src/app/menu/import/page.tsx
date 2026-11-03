@@ -91,6 +91,8 @@ function parseMenuText(raw: string): Row[] {
 }
 
 function Body() {
+  const { t } = useT();
+
   const [preview, setPreview] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(false);
