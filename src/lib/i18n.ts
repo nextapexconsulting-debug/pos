@@ -19,7 +19,6 @@ const en: Dict = {
 nav_ai_closing: "AI · Closing Count",
 nav_voice_order: "AI · Voice Order",
 
-  nav_voice_order: "AI · Voice Order",
   add_expense_shop: "Add expense (shop cost only)",
   add_item: "Add item",
   add_new_stock: "Add new stock (purchase)",
