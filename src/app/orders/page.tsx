@@ -53,10 +53,16 @@ function Orders() {
   useEffect(() => { load(); }, [load]);
 
   const act = async (fn: string, args: Record<string, unknown>) => {
-  const { t } = useT();
-
-    const { error } = await supabase.rpc(fn, args);
-    if (error) alert(error.message); else load();
+    try {
+      const { error } = await supabase.rpc(fn, args);
+      if (error) {
+        alert(error.message);
+        return;
+      }
+      await load();
+    } catch (e: any) {
+      alert(e?.message || "Action failed");
+    }
   };
 
   const live = orders.filter((o) => o.status === "active");
