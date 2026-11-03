@@ -130,6 +130,7 @@ function Shops({ shops, profs, invs, reload }: { shops: Shop[]; profs: Prof[]; i
 }
 
 function Invoices({ shops, invs, reload }: { shops: Shop[]; invs: Inv[]; reload: () => void }) {
+  const { t: tt } = useT();
   const name = (id: string) => shops.find((s) => s.id === id)?.name ?? "?";
   const t = todayIST();
   const gen = async () => {
@@ -154,7 +155,7 @@ function Invoices({ shops, invs, reload }: { shops: Shop[]; invs: Inv[]; reload:
           <span className="text-xs text-slate-400">due {i.due_date}</span>
           {i.status === "paid"
             ? <button className="text-xs text-emerald-400" onClick={() => pay(i, false)}>Paid {i.paid_on} ✓ (undo)</button>
-            : <button className={`text-xs px-3 py-1.5 rounded-lg ${i.due_date < t ? "bg-red-600" : "bg-emerald-600"}`} onClick={() => pay(i, true)}>{t("mark_paid")}</button>}
+            : <button className={`text-xs px-3 py-1.5 rounded-lg ${i.due_date < t ? "bg-red-600" : "bg-emerald-600"}`} onClick={() => pay(i, true)}>{tt("mark_paid")}</button>}
         </div>
       ))}
     </div>
