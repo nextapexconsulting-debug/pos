@@ -99,7 +99,6 @@ function normalizeItems(
   return [...qtyMap.entries()].map(([product_id, qty]) => ({ product_id, qty }));
 }
 
-/** Anthropic Claude Messages API */
 async function callClaude(
   key: string,
   model: string,
@@ -121,21 +120,57 @@ async function callClaude(
   });
   const raw = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg =
-      raw?.error?.message ||
-      raw?.error?.type ||
-      `Claude HTTP ${res.status}`;
-    return { ok: false, error: String(msg) };
+    return {
+      ok: false,
+      error: String(raw?.error?.message || raw?.error?.type || `Claude HTTP ${res.status}`),
+    };
   }
-  const parts = raw?.content;
-  const text = Array.isArray(parts)
-    ? parts.map((p: { text?: string }) => p.text || "").join("")
+  const text = Array.isArray(raw?.content)
+    ? raw.content.map((p: { text?: string }) => p.text || "").join("")
     : "";
   if (!text) return { ok: false, error: "Empty Claude reply" };
   return { ok: true, text };
 }
 
-/** Google Gemini (optional fallback) */
+/** OpenAI ChatGPT */
+async function callOpenAI(
+  key: string,
+  model: string,
+  prompt: string
+): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0,
+      max_tokens: 1024,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "You map spoken shop orders to a fixed menu. Reply with valid JSON only.",
+        },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+  const raw = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return {
+      ok: false,
+      error: String(raw?.error?.message || `OpenAI HTTP ${res.status}`),
+    };
+  }
+  const text = raw?.choices?.[0]?.message?.content || "";
+  if (!text) return { ok: false, error: "Empty OpenAI reply" };
+  return { ok: true, text };
+}
+
 async function callGemini(
   key: string,
   model: string,
@@ -165,66 +200,82 @@ async function callGemini(
   return { ok: true, text };
 }
 
-export async function GET() {
+type Provider = "claude" | "openai" | "gemini";
+
+function pickProvider(): {
+  provider: Provider;
+  key: string;
+} | null {
+  // Explicit force: AI_PROVIDER=openai|claude|gemini
+  const force = (process.env.AI_PROVIDER || "").toLowerCase().trim();
   const claudeKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+  const openAiKey = process.env.OPENAI_API_KEY || process.env.CHATGPT_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
-  if (claudeKey) {
-    const model =
-      process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
-    const r = await callClaude(
-      claudeKey,
-      model,
-      'Reply with only this JSON: {"ok":true}'
-    );
-    if (r.ok) {
-      return NextResponse.json({
-        ok: true,
-        ai: true,
-        provider: "claude",
-        model,
-        keyPrefix: claudeKey.slice(0, 8) + "…",
-      });
-    }
+  if (force === "openai" && openAiKey) return { provider: "openai", key: openAiKey };
+  if (force === "claude" && claudeKey) return { provider: "claude", key: claudeKey };
+  if (force === "gemini" && geminiKey) return { provider: "gemini", key: geminiKey };
+
+  // Default priority: Claude → ChatGPT → Gemini
+  if (claudeKey) return { provider: "claude", key: claudeKey };
+  if (openAiKey) return { provider: "openai", key: openAiKey };
+  if (geminiKey) return { provider: "gemini", key: geminiKey };
+  return null;
+}
+
+export async function GET() {
+  const picked = pickProvider();
+  if (!picked) {
     return NextResponse.json({
       ok: false,
       ai: false,
-      provider: "claude",
-      error: r.error,
+      error:
+        "Set OPENAI_API_KEY (ChatGPT), ANTHROPIC_API_KEY (Claude), or GEMINI_API_KEY — then redeploy",
     });
   }
 
-  if (geminiKey) {
-    const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-    const r = await callGemini(
-      geminiKey,
-      model,
-      'Reply with only this JSON: {"ok":true}'
-    );
+  const { provider, key } = picked;
+  if (provider === "openai") {
+    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+    const r = await callOpenAI(key, model, 'Reply with only this JSON: {"ok":true}');
     return NextResponse.json({
       ok: r.ok,
       ai: r.ok,
-      provider: "gemini",
+      provider: "openai",
+      model,
+      error: r.ok ? undefined : r.error,
+      keyPrefix: key.slice(0, 7) + "…",
+    });
+  }
+  if (provider === "claude") {
+    const model = process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
+    const r = await callClaude(key, model, 'Reply with only this JSON: {"ok":true}');
+    return NextResponse.json({
+      ok: r.ok,
+      ai: r.ok,
+      provider: "claude",
       model,
       error: r.ok ? undefined : r.error,
     });
   }
-
+  const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+  const r = await callGemini(key, model, 'Reply with only this JSON: {"ok":true}');
   return NextResponse.json({
-    ok: false,
-    ai: false,
-    error: "Set ANTHROPIC_API_KEY (preferred) or GEMINI_API_KEY on Vercel, then redeploy",
+    ok: r.ok,
+    ai: r.ok,
+    provider: "gemini",
+    model,
+    error: r.ok ? undefined : r.error,
   });
 }
 
 export async function POST(req: NextRequest) {
-  const claudeKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
-  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-
-  if (!claudeKey && !geminiKey) {
+  const picked = pickProvider();
+  if (!picked) {
     return NextResponse.json(
       {
-        error: "No AI key: set ANTHROPIC_API_KEY or GEMINI_API_KEY on Vercel + redeploy",
+        error:
+          "No AI key: set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY on Vercel + redeploy",
         items: [],
         ai: false,
       },
@@ -262,77 +313,70 @@ export async function POST(req: NextRequest) {
   }));
   const prompt = buildPrompt(mode, transcript, menuSlim);
   const idSet = new Set(menuSlim.map((m) => m.id));
+  const { provider, key } = picked;
 
-  // Prefer Claude
-  if (claudeKey) {
+  let text = "";
+  let model = "";
+
+  if (provider === "openai") {
     const models = [
-      process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514",
-      "claude-sonnet-4-20250514",
-      "claude-3-5-sonnet-20241022",
-      "claude-3-5-haiku-20241022",
+      process.env.OPENAI_MODEL || "gpt-4o-mini",
+      "gpt-4o-mini",
+      "gpt-4o",
+      "gpt-4.1-mini",
     ];
     const tried: string[] = [];
     let lastErr = "";
-    for (const model of models) {
-      if (tried.includes(model)) continue;
-      tried.push(model);
-      const r = await callClaude(claudeKey, model, prompt);
+    for (const m of models) {
+      if (tried.includes(m)) continue;
+      tried.push(m);
+      const r = await callOpenAI(key, m, prompt);
       if (!r.ok) {
         lastErr = r.error;
-        if (/not_found|model/i.test(r.error)) continue;
+        if (/model|not found|invalid/i.test(r.error)) continue;
         return NextResponse.json(
-          { error: r.error, items: [], ai: false, provider: "claude", model },
+          { error: r.error, items: [], ai: false, provider: "openai", model: m },
           { status: 502 }
         );
       }
-      const items = normalizeItems(extractJson(r.text) as { items?: ParsedLine[] }, idSet, mode);
-      return NextResponse.json({
-        items,
-        source: "claude",
-        ai: true,
-        provider: "claude",
-        model,
-      });
+      text = r.text;
+      model = m;
+      break;
     }
-    return NextResponse.json(
-      {
-        error: lastErr || "Claude model failed",
-        items: [],
-        ai: false,
-        provider: "claude",
-        tried,
-      },
-      { status: 502 }
-    );
-  }
-
-  // Gemini fallback only if no Claude key
-  const gModels = [
-    process.env.GEMINI_MODEL || "gemini-3.8-flash",
-    "gemini-3.8-flash",
-    "gemini-2.5-flash",
-  ];
-  for (const model of gModels) {
-    const r = await callGemini(geminiKey!, model, prompt);
+    if (!text) {
+      return NextResponse.json(
+        { error: lastErr || "OpenAI failed", items: [], ai: false, provider: "openai", tried },
+        { status: 502 }
+      );
+    }
+  } else if (provider === "claude") {
+    model = process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
+    const r = await callClaude(key, model, prompt);
     if (!r.ok) {
-      if (/no longer available|not found/i.test(r.error)) continue;
+      return NextResponse.json(
+        { error: r.error, items: [], ai: false, provider: "claude", model },
+        { status: 502 }
+      );
+    }
+    text = r.text;
+  } else {
+    model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+    const r = await callGemini(key, model, prompt);
+    if (!r.ok) {
       return NextResponse.json(
         { error: r.error, items: [], ai: false, provider: "gemini", model },
         { status: 502 }
       );
     }
-    const items = normalizeItems(extractJson(r.text) as { items?: ParsedLine[] }, idSet, mode);
-    return NextResponse.json({
-      items,
-      source: "gemini",
-      ai: true,
-      provider: "gemini",
-      model,
-    });
+    text = r.text;
   }
 
-  return NextResponse.json(
-    { error: "All AI providers failed", items: [], ai: false },
-    { status: 502 }
-  );
+  const items = normalizeItems(extractJson(text) as { items?: ParsedLine[] }, idSet, mode);
+  return NextResponse.json({
+    items,
+    source: provider,
+    ai: true,
+    provider,
+    model,
+  });
 }
