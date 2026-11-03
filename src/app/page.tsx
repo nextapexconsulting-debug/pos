@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import AuthGate from "@/components/AuthGate";
 import AppHeader from "@/components/AppHeader";
 import { loadPrinterCfg, printOrderReceipt } from "@/lib/printer";
+import { t, productPrimary, productSecondary, getLang } from "@/lib/i18n";
 import {
   OrderItem,
   parseSpokenOrder,
@@ -647,7 +648,7 @@ function VoicePOS() {
 
   return (
     <div className="min-h-screen text-slate-900 flex flex-col pb-36 md:pb-0 bg-slate-50">
-      <AppHeader title="New Order" breadcrumb="New Order" />
+      <AppHeader title={t("new_order")} breadcrumb={t("new_order")} />
 
       <main className="flex-1 flex flex-col md:flex-row max-w-6xl mx-auto w-full min-h-0">
         {/* Left: Products */}
@@ -690,12 +691,12 @@ function VoicePOS() {
 
 {/* Customer only — order items live in bottom sheet (mobile) / right panel (desktop) */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-sm shrink-0 space-y-2">
-            <div className="text-sm font-semibold text-slate-800">Customer</div>
+            <div className="text-sm font-semibold text-slate-800">{t("customer")}</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input
                 type="text"
                 className="bg-white border pos-border rounded-lg px-3 py-2 text-sm w-full focus:outline-none"
-                placeholder="Customer name (optional)"
+                placeholder={t("customer_name")}
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
               />
@@ -703,7 +704,7 @@ function VoicePOS() {
                 type="tel"
                 inputMode="numeric"
                 className="bg-white border pos-border rounded-lg px-3 py-2 text-sm w-full focus:outline-none"
-                placeholder="Mobile number (optional)"
+                placeholder={t("mobile")}
                 value={customerMobile}
                 onChange={(e) => setCustomerMobile(e.target.value)}
               />
@@ -724,7 +725,7 @@ function VoicePOS() {
                   type="search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search product (English / Gujarati)..."
+                  placeholder={t("search")}
                   className="w-full bg-white border pos-border rounded-xl pl-9 pr-9 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:pos-border0 focus:ring-2 focus:ring-[color-mix(in_srgb,var(--pos-primary)_30%,white)]"
                   enterKeyHint="search"
                   autoComplete="off"
@@ -793,7 +794,7 @@ function VoicePOS() {
         {/* Right: Current Order – sticky on mobile via fixed bottom bar */}
         <section className="hidden md:flex w-full md:w-[22rem] bg-white border-t md:border-t-0 md:border-l border-slate-200/80 flex-col shadow-[-8px_0_24px_rgba(15,23,42,0.04)] max-h-[50vh] md:max-h-none">
           <div className="p-3 border-b pos-border flex items-center gap-2 shrink-0 bg-white">
-            <h2 className="font-semibold flex-1 text-slate-800">Current Order</h2>
+            <h2 className="font-semibold flex-1 text-slate-800">{t("current_order")}</h2>
             {order.length > 0 && (
               <button
                 onClick={clearOrder}
@@ -807,7 +808,7 @@ function VoicePOS() {
               disabled={order.length === 0 || isSending}
               className="pos-btn hover:opacity-90 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
             >
-              {isSending ? "Sending..." : "Okay"}
+              {isSending ? "…" : t("okay")}
             </button>
           </div>
 
@@ -841,8 +842,8 @@ function VoicePOS() {
             {order.length === 0 ? (
               <div className="text-center text-slate-400 py-8">
                 <div className="text-3xl mb-1">🛒</div>
-                <p className="text-sm">No items yet</p>
-                <p className="text-xs mt-1">Tap products to add</p>
+                <p className="text-sm">{t("no_items")}</p>
+                <p className="text-xs mt-1">{t("tap_products")}</p>
               </div>
             ) : (
               order.map((item) => (
@@ -852,7 +853,7 @@ function VoicePOS() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm truncate text-slate-800">
-                      {item.product.nameEn}
+                      {productPrimary(item.product)}
                     </div>
                     <div className="text-xs text-slate-500">
                       ₹{item.product.price} each
@@ -977,7 +978,7 @@ function VoicePOS() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm truncate text-slate-800">
-                      {item.product.nameEn}
+                      {productPrimary(item.product)}
                     </div>
                     <div className="text-xs text-slate-500">
                       ₹{item.product.price} each

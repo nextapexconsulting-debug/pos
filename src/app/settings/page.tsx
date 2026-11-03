@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import PageShell, { card, input, btn, btn2 } from "@/components/PageShell";
 import { supabase } from "@/lib/supabase";
 import { THEMES, ThemeId, applyTheme, getThemeId } from "@/lib/theme";
+import { AppLang, LANG_OPTIONS, setLang, getLang, t } from "@/lib/i18n";
 import Link from "next/link";
 
 export default function SettingsPage() {
@@ -16,6 +17,7 @@ export default function SettingsPage() {
 
 function Body() {
   const [theme, setTheme] = useState<ThemeId>("ink_snow");
+  const [appLang, setAppLang] = useState<AppLang>("en");
   const [notify, setNotify] = useState(true);
   const [rent, setRent] = useState("25000");
   const [elec, setElec] = useState("5000");
@@ -37,6 +39,7 @@ function Body() {
 
   useEffect(() => {
     setTheme(getThemeId());
+      setAppLang(getLang());
     (async () => {
       const { data } = await supabase.from("shop_settings").select("*").maybeSingle();
       if (data) {
@@ -58,6 +61,10 @@ function Body() {
         setGstRate(String(data.gst_rate ?? 5));
         setInvoicePrefix(data.invoice_prefix || "INV");
         if (data.payment_qr) setPaymentQr(data.payment_qr);
+        if (data.app_language) {
+          setAppLang(data.app_language as AppLang);
+          setLang(data.app_language as AppLang);
+        }
         setPaymentRedirect(data.payment_redirect === true);
         if (data.day_start_time) setDayStart(String(data.day_start_time).slice(0, 5));
         if (data.day_end_time) setDayEnd(String(data.day_end_time).slice(0, 5));
@@ -102,6 +109,7 @@ function Body() {
       invoice_prefix: invoicePrefix.trim() || "INV",
       payment_qr: paymentQr || null,
       payment_redirect: paymentRedirect,
+      app_language: appLang,
       day_start_time: dayStart.length === 5 ? dayStart + ":00" : dayStart,
       day_end_time: dayEnd.length === 5 ? dayEnd + ":00" : dayEnd,
       updated_at: new Date().toISOString(),
@@ -115,6 +123,7 @@ function Body() {
     if (error) setMsg(error.message);
     else {
       applyTheme(theme);
+      setLang(appLang);
       try {
         localStorage.setItem(
           "pos-gst-cfg",
@@ -136,6 +145,27 @@ function Body() {
 
   return (
     <>
+      
+      <div className={`${card} space-y-3`}>
+        <h2 className="font-semibold">{t("language", appLang)}</h2>
+        <p className="text-xs text-slate-500">{t("language_hint", appLang)}</p>
+        <select
+          className={input}
+          value={appLang}
+          onChange={(e) => {
+            const v = e.target.value as AppLang;
+            setAppLang(v);
+            setLang(v);
+          }}
+        >
+          {LANG_OPTIONS.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label} — {o.native}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className={`${card} space-y-3`}>
         <h2 className="font-semibold">Theme</h2>
         <select
