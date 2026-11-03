@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -11,8 +12,9 @@ interface Exp { id: string; category: string; note: string | null; amount: numbe
 const PRESETS = ["Vegetables", "Tea", "Salary", "Gas", "Electricity", "Rent", "Misc"];
 
 export default function Dashboard() {
+  const { t } = useT();
   return (
-    <PageShell title="Today · Income, Expense, Profit" roles={["owner"]}>
+    <PageShell title={t("today_profit")} roles={["owner"]}>
       <Body />
     </PageShell>
   );
@@ -158,7 +160,7 @@ function Body() {
       </div>
 
       <form onSubmit={add} className={`${card} space-y-2`}>
-        <h2 className="font-semibold text-sm">Add expense</h2>
+        <h2 className="font-semibold text-sm">{t("add_expense")}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <input className={input} list="cats" placeholder="Category (type or pick)" value={cat} onChange={(e) => setCat(e.target.value)} required />
           <datalist id="cats">{cats.map((c) => <option key={c} value={c} />)}</datalist>

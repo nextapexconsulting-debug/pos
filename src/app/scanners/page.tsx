@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useEffect, useState } from "react";
@@ -186,7 +187,7 @@ function Body() {
     });
   };
 
-  if (!cfg) return <p className="text-sm text-slate-400">Loading…</p>;
+  if (!cfg) return <p className="text-sm text-slate-400">{t("loading")}</p>;
 
   return (
     <>

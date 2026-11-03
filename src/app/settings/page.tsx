@@ -4,18 +4,20 @@ import { useEffect, useState } from "react";
 import PageShell, { card, input, btn, btn2 } from "@/components/PageShell";
 import { supabase } from "@/lib/supabase";
 import { THEMES, ThemeId, applyTheme, getThemeId } from "@/lib/theme";
-import { AppLang, LANG_OPTIONS, setLang, getLang, t } from "@/lib/i18n";
+import { AppLang, LANG_OPTIONS, setLang, getLang, useT } from "@/lib/i18n";
 import Link from "next/link";
 
 export default function SettingsPage() {
+  const { t } = useT();
   return (
-    <PageShell title="Configuration" roles={["owner"]}>
+    <PageShell title={t("configuration")} roles={["owner"]}>
       <Body />
     </PageShell>
   );
 }
 
 function Body() {
+  const { t, lang } = useT();
   const [theme, setTheme] = useState<ThemeId>("ink_snow");
   const [appLang, setAppLang] = useState<AppLang>("en");
   const [notify, setNotify] = useState(true);
@@ -147,8 +149,8 @@ function Body() {
     <>
       
       <div className={`${card} space-y-3`}>
-        <h2 className="font-semibold">{t("language", appLang)}</h2>
-        <p className="text-xs text-slate-500">{t("language_hint", appLang)}</p>
+        <h2 className="font-semibold">{t("language")}</h2>
+        <p className="text-xs text-slate-500">{t("language_hint")}</p>
         <select
           className={input}
           value={appLang}
@@ -167,7 +169,7 @@ function Body() {
       </div>
 
       <div className={`${card} space-y-3`}>
-        <h2 className="font-semibold">Theme</h2>
+        <h2 className="font-semibold">{t("theme")}</h2>
         <select
           className={input}
           value={theme}
@@ -201,7 +203,7 @@ function Body() {
       </div>
 
       <div className={`${card} space-y-3`}>
-        <h2 className="font-semibold">Order notifications</h2>
+        <h2 className="font-semibold">{t("order_notifications")}</h2>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
           Notify on this device when a new order is saved
@@ -213,7 +215,7 @@ function Body() {
       </div>
 
       <div className={`${card} space-y-3`}>
-        <h2 className="font-semibold">Default monthly expenses</h2>
+        <h2 className="font-semibold">{t("default_monthly_expenses")}</h2>
         <p className="text-xs text-slate-500">
           Rent and electricity are split by days in the month and auto-added once per day (old days
           stay unchanged).
@@ -245,7 +247,7 @@ function Body() {
       
       
       <div className={`${card} space-y-3`}>
-        <h2 className="font-semibold">Payment scanner (UPI QR)</h2>
+        <h2 className="font-semibold">{t("payment_scanner")}</h2>
         <p className="text-xs text-slate-500">
           Upload your UPI / bank QR image. Shown on Pay Now when redirect is enabled.
         </p>
@@ -301,7 +303,7 @@ function Body() {
       </div>
 
       <div className={`${card} space-y-3`}>
-        <h2 className="font-semibold">Delivery platforms (commission %)</h2>
+        <h2 className="font-semibold">{t("delivery_platforms")}</h2>
         <p className="text-xs text-slate-500">
           Default <b>28%</b>. Add unlimited platforms (Zomato, Swiggy, or any new app). Used for Online
           Orders and Reports net profit.
@@ -382,7 +384,7 @@ function Body() {
       </div>
 
       <div className={`${card} space-y-3`}>
-        <h2 className="font-semibold">Shop timings (business day)</h2>
+        <h2 className="font-semibold">{t("shop_timings")}</h2>
         <p className="text-xs text-slate-500">
           Stored in database for this shop. Orders, profit, stock and reports use this day —
           not midnight and not this device clock alone.
@@ -420,7 +422,7 @@ function Body() {
       </div>
 
       <div className={`${card} space-y-3`}>
-        <h2 className="font-semibold">GST / Tax invoice</h2>
+        <h2 className="font-semibold">{t("gst_tax")}</h2>
         <p className="text-xs text-slate-500">
           Same state (Gujarat): CGST + SGST. Other state: IGST. Prices treated as GST-inclusive.
         </p>

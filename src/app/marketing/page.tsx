@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

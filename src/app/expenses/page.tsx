@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -16,8 +17,9 @@ interface Exp {
 }
 
 export default function ExpensesPage() {
+  const { t } = useT();
   return (
-    <PageShell title="Expenses" roles={["owner"]}>
+    <PageShell title={t("expenses")} roles={["owner"]}>
       <Body />
     </PageShell>
   );

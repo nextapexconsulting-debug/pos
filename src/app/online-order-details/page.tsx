@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -26,8 +27,9 @@ type Daily = {
 };
 
 export default function OnlineOrderDetailsPage() {
+  const { t } = useT();
   return (
-    <PageShell title="Online Total Amount" roles={["owner", "staff"]}>
+    <PageShell title={t("nav_online_total")} roles={["owner", "staff"]}>
       <Body />
     </PageShell>
   );

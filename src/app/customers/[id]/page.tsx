@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
@@ -8,7 +9,7 @@ import { supabase, inr } from "@/lib/supabase";
 
 export default function CustomerDetailPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-slate-400 text-sm">Loading…</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-slate-400 text-sm">{t("loading")}</div>}>
       <CustomerDetailInner />
     </Suspense>
   );
@@ -67,7 +68,7 @@ function Body() {
         </div>
       )}
       <div className="space-y-2">
-        {orders.length === 0 && <p className="text-center text-slate-400 py-8 text-sm">No orders</p>}
+        {orders.length === 0 && <p className="text-center text-slate-400 py-8 text-sm">{t("no_orders")}</p>}
         {orders.map((o) => (
           <div key={o.id} className={`${card} ${o.status === "cancelled" ? "opacity-50" : ""}`}>
             <div className="flex items-center gap-2 text-sm">

@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -16,8 +17,9 @@ type Row = {
 };
 
 export default function OnlineOrdersPage() {
+  const { t } = useT();
   return (
-    <PageShell title="Online Order" roles={["owner", "staff"]}>
+    <PageShell title={t("nav_online_order")} roles={["owner", "staff"]}>
       <Body />
     </PageShell>
   );

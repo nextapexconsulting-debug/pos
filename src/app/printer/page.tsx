@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useEffect, useState } from "react";
@@ -14,8 +15,9 @@ import {
 type Cfg = PrinterCfg & { customerQrUrl?: string };
 
 export default function PrinterPage() {
+  const { t } = useT();
   return (
-    <PageShell title="Printer" roles={["owner", "staff"]}>
+    <PageShell title={t("printer")} roles={["owner", "staff"]}>
       <Body />
     </PageShell>
   );
@@ -288,9 +290,9 @@ function Body() {
       <div className={`${card} text-xs text-slate-600 space-y-2`}>
         <p className="font-semibold text-slate-800">Pocket POS Lite (Bluetooth) — exact steps</p>
         <p>1. Phone <b>Settings → Bluetooth</b> → pair the thermal printer (must show Connected).</p>
-        <p>2. Open <b>Pocket POS Lite</b> app → select that printer → run its <b>Test print</b> until paper moves.</p>
+        <p>2. Open <b>Pocket POS Lite</b> app → select that printer → run its <b>{t("test_print")}</b> until paper moves.</p>
         <p>3. In GenZPOS → Printer: enable printing, connection <b>System print</b>, paper <b>58 mm</b> → Save.</p>
-        <p>4. Tap <b>Test print</b> here. In the Android print screen:</p>
+        <p>4. Tap <b>{t("test_print")}</b> here. In the Android print screen:</p>
         <p className="pl-3">• Printer = <b>Pocket POS Lite</b> (or your printer name) — <b>not</b> Save as PDF</p>
         <p className="pl-3">• Paper size = 58mm / roll if listed</p>
         <p className="pl-3">• Then Print</p>

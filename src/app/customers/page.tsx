@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -15,8 +16,9 @@ type Row = {
 };
 
 export default function CustomersPage() {
+  const { t } = useT();
   return (
-    <PageShell title="Customers" roles={["owner", "staff"]}>
+    <PageShell title={t("customers")} roles={["owner", "staff"]}>
       <Body />
     </PageShell>
   );
@@ -55,7 +57,7 @@ function Body() {
         <input type="date" className={input + " !w-auto"} value={from} onChange={(e) => setFrom(e.target.value)} />
         <span>→</span>
         <input type="date" className={input + " !w-auto"} value={to} onChange={(e) => setTo(e.target.value)} />
-        <input className={input + " !max-w-xs"} placeholder="Search name / mobile" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className={input + " !max-w-xs"} placeholder={t("search")} value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       {err && <p className="text-red-500 text-sm">{err}</p>}
       <div className="space-y-2">

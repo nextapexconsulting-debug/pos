@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useParams } from "next/navigation";
@@ -5,7 +6,7 @@ import { Suspense, useState } from "react";
 
 export default function PublicOrderPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">{t("loading")}</div>}>
       <Form />
     </Suspense>
   );

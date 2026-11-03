@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -256,8 +257,9 @@ const REPORTS: Rep[] = [
 ];
 
 export default function ReportsPage() {
+  const { t } = useT();
   return (
-    <PageShell title="Reports" roles={["owner"]}>
+    <PageShell title={t("reports")} roles={["owner"]}>
       <Body />
     </PageShell>
   );
@@ -649,7 +651,7 @@ function Body() {
           </button>
         </div>
         {busy ? (
-          <p className="text-slate-500 text-sm py-6 text-center">Loading…</p>
+          <p className="text-slate-500 text-sm py-6 text-center">{t("loading")}</p>
         ) : err ? (
           <p className="text-red-500 text-sm">{err}</p>
         ) : (

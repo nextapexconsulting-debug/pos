@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -16,8 +17,9 @@ interface Order {
 }
 
 export default function OrdersPage() {
+  const { t } = useT();
   return (
-    <PageShell title="Orders" roles={["owner", "staff"]}>
+    <PageShell title={t("orders")} roles={["owner", "staff"]}>
       <Orders />
     </PageShell>
   );
@@ -78,7 +80,7 @@ function Orders() {
       </div>
       {err && <p className="text-red-500 text-sm">{err}</p>}
 
-      {shown.length === 0 && <p className="text-slate-400 text-center py-10 text-sm">No orders</p>}
+      {shown.length === 0 && <p className="text-slate-400 text-center py-10 text-sm">{t("no_orders")}</p>}
       {shown.map((o) => (
         <div key={o.id} className={`${card} ${o.status === "cancelled" ? "opacity-50" : ""}`}>
           <div className="flex items-center gap-2">
@@ -108,7 +110,7 @@ function Orders() {
               </>
             ) : (
               <>
-                <span className="text-xs text-amber-600">Unpaid</span>
+                <span className="text-xs text-amber-600">{t("unpaid")}</span>
                 <button className="pos-btn hover:opacity-90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg" onClick={() => act("set_payment", { p_order: o.id, p_method: "cash" })}>💵 Paid Cash</button>
                 <button className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg" onClick={() => act("set_payment", { p_order: o.id, p_method: "upi" })}>📱 Paid UPI</button>
               </>

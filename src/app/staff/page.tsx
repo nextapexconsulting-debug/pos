@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -7,8 +8,9 @@ import { supabase } from "@/lib/supabase";
 interface P { id: string; email: string; full_name: string | null; role: string; is_blocked: boolean }
 
 export default function StaffPage() {
+  const { t } = useT();
   return (
-    <PageShell title="Staff" roles={["owner"]}>
+    <PageShell title={t("staff")} roles={["owner"]}>
       <Body />
     </PageShell>
   );

@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useState } from "react";
@@ -213,7 +214,7 @@ function Body() {
           })}
           <div className="flex gap-2 mt-3">
             <button className={btn} onClick={save} disabled={!chosen}>{mode === "replace" ? `Delete old & save ${chosen} items` : `Add ${chosen} to menu`}</button>
-            <button className={btn2} onClick={() => { setRows([]); setPreview(""); }}>Cancel</button>
+            <button className={btn2} onClick={() => { setRows([]); setPreview(""); }}>{t("cancel")}</button>
           </div>
           <details className="mt-3"><summary className="text-xs text-slate-500 cursor-pointer">Show raw text the photo reader saw</summary>
             <pre className="text-[11px] text-slate-400 whitespace-pre-wrap mt-1">{rawText}</pre></details>

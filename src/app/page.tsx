@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import AuthGate from "@/components/AuthGate";
 import AppHeader from "@/components/AppHeader";
 import { loadPrinterCfg, printOrderReceipt } from "@/lib/printer";
-import { t, productPrimary, productSecondary, getLang } from "@/lib/i18n";
+import { useT, productPrimary, productSecondary } from "@/lib/i18n";
 import {
   OrderItem,
   parseSpokenOrder,
@@ -24,6 +24,7 @@ export default function Page() {
 }
 
 function VoicePOS() {
+  const { t } = useT();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [order, setOrder] = useState<OrderItem[]>([]);

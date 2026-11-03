@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -22,8 +23,9 @@ interface In {
 }
 
 export default function StockPage() {
+  const { t } = useT();
   return (
-    <PageShell title="Stock" roles={["owner"]}>
+    <PageShell title={t("stock")} roles={["owner"]}>
       <Body />
     </PageShell>
   );

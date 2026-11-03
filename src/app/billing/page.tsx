@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 "use client";
 
 import { useEffect, useState } from "react";
@@ -25,8 +26,9 @@ type DayCost = {
 const SINCE = "2026-10-14";
 
 export default function BillingPage() {
+  const { t } = useT();
   return (
-    <PageShell title="Billing" roles={["owner"]}>
+    <PageShell title={t("billing")} roles={["owner"]}>
       <Body />
     </PageShell>
   );
@@ -137,7 +139,7 @@ function Body() {
         <div className="grid grid-cols-3 gap-2 text-center text-sm">
           <div className="rounded-lg border pos-border p-2">
             <div className="font-bold">{orderTotal}</div>
-            <div className="text-[11px] text-slate-500">Orders</div>
+            <div className="text-[11px] text-slate-500">{t("orders")}</div>
           </div>
           <div className="rounded-lg border pos-border p-2">
             <div className="font-bold">{inr(salesTotal)}</div>
