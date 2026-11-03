@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import PageShell, { card, input, btn, btn2 } from "@/components/PageShell";
 import { supabase } from "@/lib/supabase";
 import { Product, fetchShopProducts } from "@/lib/products";
-import { parseSpokenOrder, OrderItem } from "@/lib/parseOrder";
+import { parseSpokenOrder, suggestProducts, OrderItem } from "@/lib/parseOrder";
 import { loadPrinterCfg, printOrderReceipt } from "@/lib/printer";
 import { useT, productPrimary } from "@/lib/i18n";
 
@@ -45,6 +45,7 @@ function Body() {
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [status, setStatus] = useState("");
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [busy, setBusy] = useState(false);
   const [isParcel, setIsParcel] = useState(false);
   const [isJain, setIsJain] = useState(false);
@@ -90,11 +91,18 @@ function Body() {
       const matched = parseSpokenOrder(clean, productsRef.current);
       if (matched.length) {
         mergeItems(matched);
+        setSuggestions([]);
         setStatus(
           "Added: " + matched.map((m) => `${m.quantity}× ${m.product.nameEn}`).join(", ")
         );
       } else {
-        setStatus("No product match — try again (e.g. “2 cheese sandwich”)");
+        const sug = suggestProducts(clean, productsRef.current, 6);
+        setSuggestions(sug);
+        setStatus(
+          sug.length
+            ? "Not sure — tap a product below (or speak again)"
+            : "No match — speak closer to menu name, or tap Search"
+        );
       }
     },
     [mergeItems]
@@ -291,6 +299,39 @@ function Body() {
           </p>
         )}
         {status && <p className="text-sm text-slate-700">{status}</p>}
+        {suggestions.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {suggestions.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={btn2 + " !text-xs"}
+                onClick={() => {
+                  mergeItems([{ product: p, quantity: 1 }]);
+                  setSuggestions([]);
+                  setStatus("Added: 1× " + p.nameEn);
+                }}
+              >
+                + {p.nameEn}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="pt-2">
+          <input
+            className={input}
+            placeholder="Type to search menu…"
+            onChange={(e) => {
+              const q = e.target.value.trim();
+              if (q.length < 2) {
+                setSuggestions([]);
+                return;
+              }
+              const sug = suggestProducts(q, productsRef.current, 8);
+              setSuggestions(sug);
+            }}
+          />
+        </div>
       </div>
 
       <div className={`${card} space-y-2`}>
