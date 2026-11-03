@@ -16,7 +16,10 @@ const KEY = "pos-lang";
 type Dict = Record<string, string>;
 
 const en: Dict = {
-  nav_voice_order: "Voice Order",
+nav_ai_closing: "AI · Closing Count",
+nav_voice_order: "AI · Voice Order",
+
+  nav_voice_order: "AI · Voice Order",
   add_expense_shop: "Add expense (shop cost only)",
   add_item: "Add item",
   add_new_stock: "Add new stock (purchase)",
@@ -243,6 +246,8 @@ const en: Dict = {
 };
 
 const gu: Dict = {
+nav_ai_closing: "AI · ક્લોઝિંગ કાઉન્ટ",
+
   nav_voice_order: "વોઇસ ઓર્ડર",
   add_expense_shop: "ખર્ચ ઉમેરો (ફક્ત દુકાન)",
   add_item: "આઇટમ ઉમેરો",
@@ -470,6 +475,8 @@ const gu: Dict = {
 };
 
 const hi: Dict = {
+nav_ai_closing: "AI · क्लोजिंग काउंट",
+
   nav_voice_order: "वॉइस ऑर्डर",
   add_expense_shop: "खर्च जोड़ें (केवल दुकान)",
   add_item: "आइटम जोड़ें",
@@ -697,6 +704,8 @@ const hi: Dict = {
 };
 
 const mr: Dict = {
+nav_ai_closing: "AI · क्लोजिंग काउंट",
+
   nav_voice_order: "व्हॉइस ऑर्डर",
   add_expense_shop: "खर्च जोड़ें (केवल दुकान)",
   add_item: "आइटम जोड़ें",
@@ -924,6 +933,8 @@ const mr: Dict = {
 };
 
 const ta: Dict = {
+nav_ai_closing: "AI · மூடு எண்ணிக்கை",
+
   nav_voice_order: "குரல் ஆர்டர்",
   add_expense_shop: "Add expense (shop cost only)",
   add_item: "Add item",
@@ -1213,6 +1224,7 @@ export const NAV_I18N: Record<string, string> = {
   "/admin": "nav_admin",
   "/orders": "nav_orders",
   "/voice-order": "nav_voice_order",
+  "/ai/closing-count": "nav_ai_closing",
   "/online-orders": "nav_online_order",
   "/online-order-details": "nav_online_total",
   "/orders/edit": "nav_edit_orders",

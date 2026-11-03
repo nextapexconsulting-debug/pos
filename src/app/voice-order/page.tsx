@@ -45,15 +45,17 @@ function Body() {
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [status, setStatus] = useState("");
-  const [suggestions, setSuggestions] = useState<Product[]>([]);
+  const [aiStatus, setAiStatus] = useState<"off" | "checking" | "using" | "unavailable">("off");
   const [busy, setBusy] = useState(false);
   const [isParcel, setIsParcel] = useState(false);
   const [isJain, setIsJain] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerMobile, setCustomerMobile] = useState("");
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
   const recRef = useRef<SpeechRec | null>(null);
   const productsRef = useRef<Product[]>([]);
   const wantListen = useRef(false);
+  const lastFinalRef = useRef("");
 
   useEffect(() => {
     productsRef.current = products;
@@ -86,15 +88,19 @@ function Body() {
   const handleHeard = useCallback(
     async (text: string) => {
       const clean = text.trim();
-      if (!clean) return;
+      if (!clean || clean === lastFinalRef.current) return;
+      lastFinalRef.current = clean;
       setTranscript(clean);
+      setSuggestions([]);
 
-      // 1) Gemini AI (server) when key is configured
+      // Prefer AI — only auto-add when AI returns items
+      setAiStatus("checking");
       try {
         const res = await fetch("/api/voice-parse", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            mode: "order",
             transcript: clean,
             menu: productsRef.current.map((p) => ({
               id: p.id,
@@ -106,7 +112,7 @@ function Body() {
           }),
         });
         const data = await res.json();
-        if (res.ok && Array.isArray(data.items) && data.items.length > 0) {
+        if (res.ok && data.ai && Array.isArray(data.items) && data.items.length > 0) {
           const byId = new Map(productsRef.current.map((p) => [p.id, p]));
           const matched: OrderItem[] = [];
           for (const row of data.items) {
@@ -115,41 +121,30 @@ function Body() {
             if (product) matched.push({ product, quantity: qty });
           }
           if (matched.length) {
+            setAiStatus("using");
             mergeItems(matched);
-            setSuggestions([]);
-            setStatus(
-              "AI: " + matched.map((m) => `${m.quantity}× ${m.product.nameEn}`).join(", ")
-            );
+            setStatus(matched.map((m) => `${m.quantity}× ${m.product.nameEn}`).join(", "));
             return;
           }
         }
-        // 503 = no key — silent fall through to local
-        if (res.status === 503) {
-          /* local match */
-        } else if (data.error && res.status !== 503) {
-          setStatus("AI: " + data.error + " — trying local match…");
-        }
+        if (res.status === 503) setAiStatus("unavailable");
+        else setAiStatus("unavailable");
       } catch {
-        /* offline / network — local match */
+        setAiStatus("unavailable");
       }
 
-      // 2) Local fuzzy match
-      const matched = parseSpokenOrder(clean, productsRef.current);
-      if (matched.length) {
-        mergeItems(matched);
-        setSuggestions([]);
-        setStatus(
-          "Added: " + matched.map((m) => `${m.quantity}× ${m.product.nameEn}`).join(", ")
-        );
-      } else {
-        const sug = suggestProducts(clean, productsRef.current, 6);
-        setSuggestions(sug);
-        setStatus(
-          sug.length
-            ? "Not sure — tap a product below (or speak again)"
-            : "No match — speak closer to menu name, or type below"
-        );
-      }
+      // Local: DO NOT auto-add (avoids wrong items on laptop). Only show suggestions.
+      const local = parseSpokenOrder(clean, productsRef.current);
+      const sug =
+        local.length > 0
+          ? local.map((x) => x.product)
+          : suggestProducts(clean, productsRef.current, 6);
+      setSuggestions(sug);
+      setStatus(
+        sug.length
+          ? "Tap a product to add (local match — confirm yourself)"
+          : "No match — speak again or type below"
+      );
     },
     [mergeItems]
   );
@@ -158,17 +153,36 @@ function Body() {
     wantListen.current = false;
     try {
       recRef.current?.stop();
-    } catch {}
+    } catch {
+      /* ignore */
+    }
+    try {
+      recRef.current?.abort();
+    } catch {
+      /* ignore */
+    }
     setListening(false);
   }, []);
 
-  const startListen = useCallback(() => {
+  const startListen = useCallback(async () => {
     const Ctor = getSpeechRecognition();
     if (!Ctor) {
-      setStatus("Voice needs Chrome on Android / desktop. iPhone Safari is limited.");
+      setStatus("Voice needs Chrome (Android/desktop). Install from homescreen over HTTPS.");
       return;
     }
+    // PWA: unlock mic with getUserMedia first (standalone often needs this)
+    try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((tr) => tr.stop());
+      }
+    } catch {
+      setStatus("Microphone permission denied — allow mic for this app in browser settings.");
+      return;
+    }
+
     stopListen();
+    lastFinalRef.current = "";
     const rec = new Ctor();
     rec.continuous = true;
     rec.interimResults = true;
@@ -181,15 +195,22 @@ function Body() {
         if (r.isFinal) finalText += r[0].transcript + " ";
       }
       finalText = finalText.trim();
-      if (finalText) handleHeard(finalText);
+      if (finalText) void handleHeard(finalText);
     };
     rec.onerror = (ev: any) => {
       const err = ev?.error || "error";
-      if (err === "not-allowed") setStatus("Microphone permission denied");
-      else if (err === "no-speech") setStatus("No speech — tap mic and speak");
-      else setStatus("Mic: " + err);
-      setListening(false);
-      wantListen.current = false;
+      if (err === "not-allowed" || err === "service-not-allowed") {
+        setStatus("Mic blocked. Site settings → allow microphone. On iPhone, voice is limited.");
+        wantListen.current = false;
+        setListening(false);
+        return;
+      }
+      if (err === "no-speech") {
+        setStatus("No speech heard — speak closer to the mic");
+        return;
+      }
+      if (err === "aborted") return;
+      setStatus("Mic: " + err);
     };
     rec.onend = () => {
       if (wantListen.current) {
@@ -208,9 +229,9 @@ function Body() {
     try {
       rec.start();
       setListening(true);
-      setStatus("Listening… speak items");
+      setStatus("Listening… speak items clearly");
     } catch (e: any) {
-      setStatus(e?.message || "Could not start mic");
+      setStatus(e?.message || "Could not start mic — tap again");
       setListening(false);
       wantListen.current = false;
     }
@@ -221,7 +242,9 @@ function Body() {
       wantListen.current = false;
       try {
         recRef.current?.abort();
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     };
   }, []);
 
@@ -283,7 +306,9 @@ function Body() {
           customerMobile: customerMobile.trim() || undefined,
         });
       }
-    } catch {}
+    } catch {
+      /* ignore */
+    }
 
     try {
       const { data: payCfg } = await supabase
@@ -299,7 +324,9 @@ function Body() {
         router.push(`/pay?${params.toString()}`);
         return;
       }
-    } catch {}
+    } catch {
+      /* ignore */
+    }
 
     setOrder([]);
     setIsParcel(false);
@@ -307,6 +334,7 @@ function Body() {
     setCustomerName("");
     setCustomerMobile("");
     setTranscript("");
+    setAiStatus("off");
     setStatus(`Order #${orderNo} saved · ₹${saved.total}`);
     setBusy(false);
   };
@@ -317,17 +345,32 @@ function Body() {
     <div className="space-y-3">
       <div className={`${card} space-y-3`}>
         <p className="text-sm text-slate-600">
-          Tap mic, speak items (e.g. “two cheese sandwich and one pizza”). Matches your menu.
-          Fix qty if needed, then Okay.
+          Speak items, confirm the list, then Okay. Wrong matches are not auto-added without AI —
+          tap suggestions to confirm.
         </p>
+        {aiStatus === "using" && (
+          <div className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+            Using AI to find products
+          </div>
+        )}
+        {aiStatus === "checking" && (
+          <div className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+            Checking AI…
+          </div>
+        )}
+        {aiStatus === "unavailable" && (
+          <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+            AI not active — tap products to add (set GEMINI_API_KEY on server for AI)
+          </div>
+        )}
         {!supported && (
           <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-            This browser has no speech recognition. Use Chrome on Android or desktop.
+            This browser has no speech recognition. Use Chrome on Android (PWA) or desktop Chrome.
           </p>
         )}
         <div className="flex flex-wrap gap-2 items-center">
           {!listening ? (
-            <button type="button" className={btn} onClick={startListen} disabled={!supported}>
+            <button type="button" className={btn} onClick={() => void startListen()} disabled={!supported}>
               🎤 Start listening
             </button>
           ) : (
@@ -354,7 +397,7 @@ function Body() {
                 className={btn2 + " !text-xs"}
                 onClick={() => {
                   mergeItems([{ product: p, quantity: 1 }]);
-                  setSuggestions([]);
+                  setSuggestions((s) => s.filter((x) => x.id !== p.id));
                   setStatus("Added: 1× " + p.nameEn);
                 }}
               >
@@ -363,21 +406,18 @@ function Body() {
             ))}
           </div>
         )}
-        <div className="pt-2">
-          <input
-            className={input}
-            placeholder="Type to search menu…"
-            onChange={(e) => {
-              const q = e.target.value.trim();
-              if (q.length < 2) {
-                setSuggestions([]);
-                return;
-              }
-              const sug = suggestProducts(q, productsRef.current, 8);
-              setSuggestions(sug);
-            }}
-          />
-        </div>
+        <input
+          className={input}
+          placeholder="Type to search menu…"
+          onChange={(e) => {
+            const q = e.target.value.trim();
+            if (q.length < 2) {
+              setSuggestions([]);
+              return;
+            }
+            setSuggestions(suggestProducts(q, productsRef.current, 8));
+          }}
+        />
       </div>
 
       <div className={`${card} space-y-2`}>
@@ -460,12 +500,7 @@ function Body() {
           <span className="font-semibold">
             {t("total")}: ₹{total}
           </span>
-          <button
-            type="button"
-            className={btn}
-            disabled={busy || order.length === 0}
-            onClick={confirm}
-          >
+          <button type="button" className={btn} disabled={busy || order.length === 0} onClick={confirm}>
             {busy ? t("loading") : t("okay")}
           </button>
         </div>
@@ -476,6 +511,7 @@ function Body() {
             onClick={() => {
               setOrder([]);
               setStatus("");
+              setAiStatus("off");
             }}
           >
             Clear all

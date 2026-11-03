@@ -24,7 +24,6 @@ export default function NavLinks() {
       ? [{ href: "/admin", label: "Admin" }]
       : [
           { href: "/orders", label: "Orders" },
-          { href: "/voice-order", label: "Voice Order" },
           { href: "/online-orders", label: "Online Order" },
           { href: "/online-order-details", label: "Online Total Amount" },
           { href: "/orders/edit", label: "Edit Orders" },
@@ -34,6 +33,8 @@ export default function NavLinks() {
                 { href: "/dashboard", label: "Today / Profit" },
                 { href: "/expenses", label: "Expenses" },
                 { href: "/stock", label: "Stock" },
+                { href: "/voice-order", label: "AI · Voice Order" },
+                { href: "/ai/closing-count", label: "AI · Closing Count" },
                 { href: "/recipes", label: "Item Recipes" },
                 { href: "/reports", label: "Reports" },
                 { href: "/menu", label: "Add / Edit Product" },
@@ -46,6 +47,7 @@ export default function NavLinks() {
               ]
             : [
                 { href: "/menu", label: "Add / Edit Product" },
+                { href: "/voice-order", label: "AI · Voice Order" },
                 { href: "/recipes", label: "Item Recipes" },
               ]),
         ];
