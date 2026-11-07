@@ -5,8 +5,9 @@ import { useCallback, useEffect, useState } from "react";
 import PageShell, { card, input, btn, btn2, Table } from "@/components/PageShell";
 import { supabase, todayIST, addDays, inr } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
+import { EXPENSE_PRESETS, normalizeExpenseCategory, expenseCategoryLabel } from "@/lib/expenseCategory";
 
-const PRESETS = ["vegetables", "tea", "salary", "gas", "electricity", "rent", "misc"] as const;
+const PRESETS = EXPENSE_PRESETS;
 
 interface Exp {
   id: string;
@@ -63,11 +64,12 @@ function Body() {
 
   const total = rows.reduce((s, r) => s + Number(r.amount), 0);
   const byCat = Object.entries(
-    rows.reduce<Record<string, number>>((m, r) => {
-      m[r.category] = (m[r.category] || 0) + Number(r.amount);
+    rows.reduce((m: Record<string, number>, r) => {
+      const k = normalizeExpenseCategory(r.category);
+      m[k] = (m[k] || 0) + Number(r.amount);
       return m;
     }, {})
-  ).map(([category, amount]) => ({ category, amount }));
+  ).map(([category, amount]) => ({ category: expenseCategoryLabel(category, t), amount }));
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +78,7 @@ function Body() {
     setBusy(true);
     const { error } = await supabase.from("expenses").insert({
       expense_date: date,
-      category: cat.trim(),
+      category: normalizeExpenseCategory(cat),
       note: note.trim() || null,
       amount,
       spread_days: 1,
@@ -165,7 +167,7 @@ function Body() {
             {rows.map((r) => (
               <li key={r.id} className="py-2 flex items-center gap-2 text-sm">
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium">{r.category}</div>
+                  <div className="font-medium">{expenseCategoryLabel(r.category, t)}</div>
                   <div className="text-xs text-slate-500">
                     {r.expense_date}
                     {r.note ? ` · ${r.note}` : ""}
