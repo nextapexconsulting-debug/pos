@@ -602,7 +602,7 @@ function VoicePOS() {
 
   const markPaid = async (method: "cash" | "upi") => {
     if (!lastOrder) return;
-    const { error } = await supabase.rpc("set_payment", { p_order: lastOrder.id, p_method: method });
+    const { error } = await supabase.rpc("set_payment", { p_order: lastOrder.id, p_method: method, p_cash: null, p_upi: null });
     if (error) setStatus(`❌ ${error.message}`);
     else {
       setStatus(`💰 Order #${lastOrder.no} paid by ${method.toUpperCase()}`);

@@ -245,7 +245,7 @@ function Orders() {
                 {owner && (
                   <button
                     className="text-xs text-slate-400 underline"
-                    onClick={() => act("set_payment", { p_order: o.id, p_method: null })}
+                    onClick={() => act("set_payment", { p_order: o.id, p_method: null, p_cash: null, p_upi: null })}
                   >
                     undo
                   </button>
@@ -256,13 +256,13 @@ function Orders() {
                 <span className="text-xs text-amber-600">{t("unpaid")}</span>
                 <button
                   className="pos-btn hover:opacity-90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
-                  onClick={() => act("set_payment", { p_order: o.id, p_method: "cash" })}
+                  onClick={() => act("set_payment", { p_order: o.id, p_method: "cash", p_cash: null, p_upi: null })}
                 >
                   💵 Cash
                 </button>
                 <button
                   className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
-                  onClick={() => act("set_payment", { p_order: o.id, p_method: "upi" })}
+                  onClick={() => act("set_payment", { p_order: o.id, p_method: "upi", p_cash: null, p_upi: null })}
                 >
                   📱 UPI
                 </button>
