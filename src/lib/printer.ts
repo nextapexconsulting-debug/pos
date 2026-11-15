@@ -190,15 +190,16 @@ function buildSlipHtml(
     .map((i) => {
       const note = (i.note || "").trim();
       const noteHtml = note
-        ? `<div class="note">→ ${escapeHtml(note)}</div>`
+        ? `<tr><td colspan="2" class="note">→ ${escapeHtml(note)}</td></tr>`
         : "";
       const lineAmt = Math.round(Number(i.price) * Number(i.qty));
-      return `<div class="row">
-        <span class="iname">${i.qty}× ${escapeHtml(i.name)}</span>
-        <span class="iamt">₹${lineAmt}</span>
-      </div>${noteHtml}`;
+      return `<tr>
+        <td class="iname">${i.qty}x ${escapeHtml(i.name)}</td>
+        <td class="iamt">Rs ${lineAmt}</td>
+      </tr>${noteHtml}`;
     })
     .join("");
+  const itemsTable = `<table class="items" width="100%" cellspacing="0" cellpadding="0">${items}</table>`;
 
   const qrMm = Math.max(18, cfg.customerQrMm || 20);
   const qrBlock =
@@ -227,9 +228,9 @@ function buildSlipHtml(
       ${flags ? `<div><b>${flags}</b></div>` : ""}
       ${customerBlock}
       <div class="sep"></div>
-      ${items}
+      ${itemsTable}
       <div class="sep"></div>
-      <div class="total">${L.total}  ₹${opts.total}</div>
+      <div class="total"><b>${L.total}  Rs ${Math.round(Number(opts.total) || 0)}</b></div>
       ${opts.gstHtml || ""}
       ${qrBlock}
       <div class="sep"></div>
@@ -687,33 +688,34 @@ export async function printOrderReceipt(opts: {
         font-size: 11px;
         margin-bottom: 2px;
       }
-      #pos-print-root .row {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 6px;
-        margin: 2px 0;
-        page-break-inside: avoid;
-        break-inside: avoid;
+      #pos-print-root .items {
         width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+      #pos-print-root .items td {
+        vertical-align: top;
+        padding: 1px 0;
+        color: #000;
       }
       #pos-print-root .iname {
-        flex: 1 1 auto;
-        min-width: 0;
+        width: 70%;
         word-break: break-word;
         padding-right: 4px;
       }
       #pos-print-root .iamt {
-        flex: 0 0 auto;
+        width: 30%;
         white-space: nowrap;
         text-align: right;
         font-weight: 700;
-        min-width: 3.2em;
       }
       #pos-print-root .note {
         font-size: 10px;
         font-weight: 700;
-        margin: 0 0 3px 8px;
+        padding-left: 6px;
+      }
+      #pos-print-root .row {
+        margin: 2px 0;
       }
 
       #pos-print-root .sep {
@@ -730,6 +732,10 @@ export async function printOrderReceipt(opts: {
         font-size: 14px;
         font-weight: 700;
         text-align: right;
+        color: #000 !important;
+        display: block !important;
+        margin-top: 2px;
+        width: 100%;
       }
       #pos-print-root .qrrow {
         display: flex;
