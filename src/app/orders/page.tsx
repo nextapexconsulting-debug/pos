@@ -6,7 +6,7 @@ import { useAccess } from "@/components/AuthGate";
 import { supabase, todayIST, fetchBusinessDay, inr } from "@/lib/supabase";
 import { printOrderReceipt } from "@/lib/printer";
 import Link from "next/link";
-import { useT } from "@/lib/i18n";
+import { useT, getLang, productPrimary } from "@/lib/i18n";
 
 interface Item {
   name_en: string;
@@ -60,7 +60,7 @@ function Orders() {
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "id,order_no,created_at,total,status,payment_status,payment_method,cash_paid,upi_paid,is_parcel,is_jain,customer_name,customer_mobile,order_items(name_en,qty,price,line_total)"
+        "id,order_no,created_at,total,status,payment_status,payment_method,cash_paid,upi_paid,is_parcel,is_jain,customer_name,customer_mobile,order_items(name_en,name_gu,qty,price,line_total,line_note)"
       )
       .eq("order_date", date)
       .order("order_no", { ascending: false });
@@ -245,7 +245,7 @@ function Orders() {
                 {owner && (
                   <button
                     className="text-xs text-slate-400 underline"
-                    onClick={() => act("set_payment", { p_order: o.id, p_method: null, p_cash: null, p_upi: null })}
+                    onClick={() => act("set_payment", { p_order: o.id, p_method: null })}
                   >
                     undo
                   </button>
@@ -256,13 +256,13 @@ function Orders() {
                 <span className="text-xs text-amber-600">{t("unpaid")}</span>
                 <button
                   className="pos-btn hover:opacity-90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
-                  onClick={() => act("set_payment", { p_order: o.id, p_method: "cash", p_cash: null, p_upi: null })}
+                  onClick={() => act("set_payment", { p_order: o.id, p_method: "cash" })}
                 >
                   💵 Cash
                 </button>
                 <button
                   className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
-                  onClick={() => act("set_payment", { p_order: o.id, p_method: "upi", p_cash: null, p_upi: null })}
+                  onClick={() => act("set_payment", { p_order: o.id, p_method: "upi" })}
                 >
                   📱 UPI
                 </button>
@@ -282,9 +282,13 @@ function Orders() {
                 printOrderReceipt({
                   orderNo: o.order_no,
                   items: o.order_items.map((i) => ({
-                    name: i.name_en,
+                    name:
+                      getLang() === "gu" && i.name_gu
+                        ? i.name_gu
+                        : i.name_en,
                     qty: i.qty,
                     price: i.price,
+                    note: (i as any).line_note || null,
                   })),
                   total: Number(o.total),
                   parcel: o.is_parcel === true,

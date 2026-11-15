@@ -3,6 +3,8 @@ import { NUMBER_MAP, Product } from "./products";
 export interface OrderItem {
   product: Product;
   quantity: number;
+  /** Line-level kitchen note e.g. no onion */
+  note?: string;
 }
 
 /** Common mic / accent mistakes → canonical tokens */

@@ -1,4 +1,5 @@
 import { splitGst, formatGstLines } from "@/lib/gst";
+import { getLang, t, productPrimary } from "@/lib/i18n";
 export type Conn = "none" | "network" | "bluetooth" | "system";
 
 export interface PrinterCfg {
@@ -149,7 +150,7 @@ type QrCell = { label: string; dataUrl: string };
 function buildSlipHtml(
   opts: {
     orderNo: number;
-    items: { name: string; qty: number; price: number }[];
+    items: { name: string; qty: number; price: number; note?: string | null }[];
     total: number;
     parcel?: boolean;
     jain?: boolean;
@@ -163,7 +164,17 @@ function buildSlipHtml(
   qrs: QrCell[],
   isCustomerCopy: boolean
 ): string {
-  const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""]
+  const lang = getLang();
+  const L = {
+    order: lang === "gu" ? "ઓર્ડર #" : lang === "hi" ? "ऑर्डर #" : lang === "mr" ? "ऑर्डर #" : lang === "ta" ? "ஆர்டர் #" : "Order #",
+    name: lang === "gu" ? "નામ" : lang === "hi" ? "नाम" : lang === "mr" ? "नाव" : lang === "ta" ? "பெயர்" : "Name",
+    mobile: lang === "gu" ? "મોબાઇલ" : lang === "hi" ? "मोबाइल" : "Mobile",
+    total: lang === "gu" ? "કુલ" : lang === "hi" ? "कुल" : lang === "mr" ? "एकूण" : lang === "ta" ? "மொத்தம்" : "TOTAL",
+    thanks: lang === "gu" ? "આભાર" : lang === "hi" ? "धन्यवाद" : lang === "mr" ? "धन्यवाद" : lang === "ta" ? "நன்றி" : "Thank you",
+    parcel: lang === "gu" ? "પાર્સલ" : lang === "hi" ? "पार्सल" : "PARCEL",
+    jain: lang === "gu" ? "જૈન" : lang === "hi" ? "जैन" : "JAIN",
+  };
+  const flags = [opts.parcel ? L.parcel : "", opts.jain ? L.jain : ""]
     .filter(Boolean)
     .join(" · ");
   const name = (opts.customerName || "").trim();
@@ -171,15 +182,22 @@ function buildSlipHtml(
   const customerBlock =
     name || mobile
       ? `<div class="sep"></div>
-         ${name ? `<div><b>Name:</b> ${escapeHtml(name)}</div>` : ""}
-         ${mobile ? `<div><b>Mobile:</b> ${escapeHtml(mobile)}</div>` : ""}`
+         ${name ? `<div><b>${L.name}:</b> ${escapeHtml(name)}</div>` : ""}
+         ${mobile ? `<div><b>${L.mobile}:</b> ${escapeHtml(mobile)}</div>` : ""}`
       : "";
 
   const items = opts.items
-    .map(
-      (i) =>
-        `<div class="row"><span>${i.qty}× ${escapeHtml(i.name)}</span><span>₹${i.price * i.qty}</span></div>`
-    )
+    .map((i) => {
+      const note = (i.note || "").trim();
+      const noteHtml = note
+        ? `<div class="note">→ ${escapeHtml(note)}</div>`
+        : "";
+      const lineAmt = Math.round(Number(i.price) * Number(i.qty));
+      return `<div class="row">
+        <span class="iname">${i.qty}× ${escapeHtml(i.name)}</span>
+        <span class="iamt">₹${lineAmt}</span>
+      </div>${noteHtml}`;
+    })
     .join("");
 
   const qrMm = Math.max(18, cfg.customerQrMm || 20);
@@ -204,18 +222,18 @@ function buildSlipHtml(
       <div class="copy">${escapeHtml(copyLabel)}</div>
       <div class="head">${escapeHtml(cfg.shopHeader)}</div>
       <div class="sep"></div>
-      <div><b>Order #${opts.orderNo || "—"}</b></div>
+      <div><b>${L.order}${opts.orderNo || "—"}</b></div>
       <div>${formatOrderTime(opts.orderedAt)}</div>
       ${flags ? `<div><b>${flags}</b></div>` : ""}
       ${customerBlock}
       <div class="sep"></div>
       ${items}
       <div class="sep"></div>
-      <div class="total">TOTAL  Rs ${opts.total}</div>
+      <div class="total">${L.total}  ₹${opts.total}</div>
       ${opts.gstHtml || ""}
       ${qrBlock}
       <div class="sep"></div>
-      <div style="text-align:center">Thank you</div>
+      <div style="text-align:center">${L.thanks}</div>
     </div>`;
 }
 
@@ -224,7 +242,7 @@ function buildSlipHtml(
 function buildKotHtml(
   opts: {
     orderNo: number;
-    items: { name: string; qty: number; price: number }[];
+    items: { name: string; qty: number; price: number; note?: string | null }[];
     total: number;
     parcel?: boolean;
     jain?: boolean;
@@ -235,9 +253,6 @@ function buildKotHtml(
   cfg: PrinterCfg,
   copyLabel: string
 ): string {
-  const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""]
-    .filter(Boolean)
-    .join(" · ");
   const name = (opts.customerName || "").trim();
   const items = opts.items
     .map((i) => `<div class="row"><span><b>${i.qty}×</b> ${escapeHtml(i.name)}</span></div>`)
@@ -247,7 +262,7 @@ function buildKotHtml(
       <div class="copy">${escapeHtml(copyLabel)}</div>
       <div class="head">${escapeHtml(cfg.shopHeader)}</div>
       <div class="sep"></div>
-      <div><b>Order #${opts.orderNo || "—"}</b></div>
+      <div><b>${L.order}${opts.orderNo || "—"}</b></div>
       <div>${formatOrderTime(opts.orderedAt)}</div>
       ${flags ? `<div><b>${flags}</b></div>` : ""}
       ${name ? `<div>${escapeHtml(name)}</div>` : ""}
@@ -263,7 +278,7 @@ function buildKotHtml(
 function buildEscPosBytes(
   opts: {
     orderNo: number;
-    items: { name: string; qty: number; price: number }[];
+    items: { name: string; qty: number; price: number; note?: string | null }[];
     total: number;
     parcel?: boolean;
     jain?: boolean;
@@ -519,7 +534,7 @@ export async function printViaBluetoothEscpos(data: Uint8Array): Promise<void> {
 
 export async function printOrderReceipt(opts: {
   orderNo: number;
-  items: { name: string; qty: number; price: number }[];
+  items: { name: string; qty: number; price: number; note?: string | null }[];
   total: number;
   parcel?: boolean;
   jain?: boolean;
@@ -667,11 +682,32 @@ export async function printOrderReceipt(opts: {
       #pos-print-root .row {
         display: flex;
         justify-content: space-between;
-        gap: 4px;
-        margin: 1px 0;
+        align-items: flex-start;
+        gap: 6px;
+        margin: 2px 0;
         page-break-inside: avoid;
         break-inside: avoid;
+        width: 100%;
       }
+      #pos-print-root .iname {
+        flex: 1 1 auto;
+        min-width: 0;
+        word-break: break-word;
+        padding-right: 4px;
+      }
+      #pos-print-root .iamt {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        text-align: right;
+        font-weight: 700;
+        min-width: 3.2em;
+      }
+      #pos-print-root .note {
+        font-size: 10px;
+        font-weight: 700;
+        margin: 0 0 3px 8px;
+      }
+
       #pos-print-root .sep {
         border-top: 1px dashed #000;
         margin: 4px 0;

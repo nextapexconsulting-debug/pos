@@ -438,6 +438,15 @@ function VoicePOS() {
     };
   }, [customerMobile]);
 
+
+  const setItemNote = (productId: string, note: string) => {
+    setOrder((prev) =>
+      prev.map((item) =>
+        item.product.id === productId ? { ...item, note: note.slice(0, 80) } : item
+      )
+    );
+  };
+
   const confirmOrder = async () => {
     if (order.length === 0) {
       setStatus("No items in order");
@@ -459,6 +468,7 @@ function VoicePOS() {
         category: i.product.id.includes("pizza") ? "pizza" : "sandwich",
         price: i.product.price,
         qty: i.quantity,
+        line_note: (i.note || "").trim() || null,
       })),
       p_is_parcel: false,
       p_is_jain: false,
@@ -496,7 +506,7 @@ function VoicePOS() {
       id: saved.order_id,
       no: newOrderNumber,
       total: saved.total,
-      items: order.map((i) => ({ name: i.product.nameEn, qty: i.quantity, price: i.product.price })),
+      items: order.map((i) => ({ name: productPrimary(i.product), qty: i.quantity, price: i.product.price, note: i.note || null })),
       parcel: parcelOn,
       jain: jainOn,
       orderedAt: placedAt,
@@ -532,7 +542,7 @@ function VoicePOS() {
       if (pcfg.enabled) {
         printOrderReceipt({
           orderNo: newOrderNumber,
-          items: order.map((i) => ({ name: i.product.nameEn, qty: i.quantity, price: i.product.price })),
+          items: order.map((i) => ({ name: productPrimary(i.product), qty: i.quantity, price: i.product.price, note: i.note || null })),
           total,
           parcel: parcelOn,
           jain: jainOn,
@@ -602,7 +612,7 @@ function VoicePOS() {
 
   const markPaid = async (method: "cash" | "upi") => {
     if (!lastOrder) return;
-    const { error } = await supabase.rpc("set_payment", { p_order: lastOrder.id, p_method: method, p_cash: null, p_upi: null });
+    const { error } = await supabase.rpc("set_payment", { p_order: lastOrder.id, p_method: method });
     if (error) setStatus(`❌ ${error.message}`);
     else {
       setStatus(`💰 Order #${lastOrder.no} paid by ${method.toUpperCase()}`);
@@ -851,7 +861,7 @@ function VoicePOS() {
               order.map((item) => (
                 <div
                   key={item.product.id}
-                  className="bg-white rounded-xl p-2.5 flex items-center gap-2 border pos-border shadow-sm"
+                  className="bg-white rounded-xl p-2.5 flex flex-wrap items-center gap-2 border pos-border shadow-sm"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm truncate text-slate-800">
@@ -890,6 +900,35 @@ function VoicePOS() {
                     >
                       Remove
                     </button>
+                  </div>
+                  <div className="w-full mt-1.5 flex flex-wrap gap-1 items-center">
+                    {["No onion", "No capsicum", "Less spicy"].map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                          (item.note || "").includes(chip)
+                            ? "bg-slate-900 text-white border-slate-900"
+                            : "bg-white text-slate-600 border-slate-200"
+                        }`}
+                        onClick={() => {
+                          const cur = item.note || "";
+                          const parts = cur.split(",").map((s) => s.trim()).filter(Boolean);
+                          const next = parts.includes(chip)
+                            ? parts.filter((s) => s !== chip).join(", ")
+                            : [...parts, chip].join(", ");
+                          setItemNote(item.product.id, next);
+                        }}
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                    <input
+                      className="text-[11px] border border-slate-200 rounded-lg px-2 py-0.5 flex-1 min-w-[90px]"
+                      placeholder="Line note…"
+                      value={item.note || ""}
+                      onChange={(e) => setItemNote(item.product.id, e.target.value)}
+                    />
                   </div>
                 </div>
               ))
@@ -976,7 +1015,7 @@ function VoicePOS() {
               order.map((item) => (
                 <div
                   key={item.product.id}
-                  className="pos-soft-bg rounded-xl p-2.5 flex items-center gap-2 border pos-border"
+                  className="pos-soft-bg rounded-xl p-2.5 flex flex-wrap items-center gap-2 border pos-border"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm truncate text-slate-800">
@@ -1013,6 +1052,36 @@ function VoicePOS() {
                     >
                       Remove
                     </button>
+                  </div>
+
+                  <div className="w-full mt-1.5 flex flex-wrap gap-1 items-center col-span-full">
+                    {["No onion", "No capsicum", "Less spicy"].map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                          (item.note || "").includes(chip)
+                            ? "bg-slate-900 text-white border-slate-900"
+                            : "bg-white text-slate-600 border-slate-200"
+                        }`}
+                        onClick={() => {
+                          const cur = item.note || "";
+                          const parts = cur.split(",").map((s) => s.trim()).filter(Boolean);
+                          const next = parts.includes(chip)
+                            ? parts.filter((s) => s !== chip).join(", ")
+                            : [...parts, chip].join(", ");
+                          setItemNote(item.product.id, next);
+                        }}
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                    <input
+                      className="text-[11px] border border-slate-200 rounded-lg px-2 py-0.5 flex-1 min-w-[90px]"
+                      placeholder="Line note…"
+                      value={item.note || ""}
+                      onChange={(e) => setItemNote(item.product.id, e.target.value)}
+                    />
                   </div>
                 </div>
               ))
