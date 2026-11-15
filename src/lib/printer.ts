@@ -259,13 +259,23 @@ function buildKotHtml(
     lang === "gu" ? "ઓર્ડર #" : lang === "hi" ? "ऑर्डर #" : lang === "mr" ? "ऑर्डर #" : lang === "ta" ? "ஆர்டர் #" : "Order #";
   const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""].filter(Boolean).join(" · ");
   const name = (opts.customerName || "").trim();
-  const items = opts.items
+  const totalLabel =
+    lang === "gu" ? "કુલ" : lang === "hi" ? "कुल" : lang === "mr" ? "एकूण" : lang === "ta" ? "மொத்தம்" : "TOTAL";
+  const itemRows = opts.items
     .map((i) => {
       const note = (i.note || "").trim();
-      const noteHtml = note ? `<div class="note">→ ${escapeHtml(note)}</div>` : "";
-      return `<div class="row"><span class="iname"><b>${i.qty}×</b> ${escapeHtml(i.name)}</span></div>${noteHtml}`;
+      const noteHtml = note
+        ? `<tr><td colspan="2" class="note">→ ${escapeHtml(note)}</td></tr>`
+        : "";
+      const lineAmt = Math.round(Number(i.price) * Number(i.qty));
+      return `<tr>
+        <td class="iname"><b>${i.qty}x</b> ${escapeHtml(i.name)}</td>
+        <td class="iamt">Rs ${lineAmt}</td>
+      </tr>${noteHtml}`;
     })
     .join("");
+  const itemsTable = `<table class="items" width="100%" cellspacing="0" cellpadding="0">${itemRows}</table>`;
+  const totalAmt = Math.round(Number(opts.total) || 0);
   return `
     <div class="sheet">
       <div class="copy">${escapeHtml(copyLabel)}</div>
@@ -276,8 +286,9 @@ function buildKotHtml(
       ${flags ? `<div><b>${flags}</b></div>` : ""}
       ${name ? `<div>${escapeHtml(name)}</div>` : ""}
       <div class="sep"></div>
-      ${items}
+      ${itemsTable}
       <div class="sep"></div>
+      <div class="total"><b>${totalLabel}  Rs ${totalAmt}</b></div>
       <div style="text-align:center;font-size:11px">${opts.items.reduce((s, i) => s + i.qty, 0)} items</div>
     </div>`;
 }
