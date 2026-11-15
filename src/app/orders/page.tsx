@@ -10,9 +10,11 @@ import { useT, getLang, productPrimary } from "@/lib/i18n";
 
 interface Item {
   name_en: string;
+  name_gu?: string | null;
   qty: number;
   price: number;
   line_total: number;
+  line_note?: string | null;
 }
 interface Order {
   id: string;
@@ -288,7 +290,7 @@ function Orders() {
                         : i.name_en,
                     qty: i.qty,
                     price: i.price,
-                    note: (i as any).line_note || null,
+                    note: i.line_note || null,
                   })),
                   total: Number(o.total),
                   parcel: o.is_parcel === true,
