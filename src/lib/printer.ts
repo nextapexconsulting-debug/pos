@@ -89,20 +89,55 @@ function escapeHtml(s: string) {
     .replace(/"/g, "&quot;");
 }
 
+/** Thermal printers only handle basic ASCII. Unicode prints as dots. */
+function thermalSafe(s: string): string {
+  let out = String(s ?? "");
+  out = out.replace(/\u20B9/g, "Rs ");
+  out = out.replace(/\xA3/g, "Rs "); // unlikely
+  out = out.replace(/\u00D7/g, "x");
+  out = out.replace(/\u2013|\u2014|\u2212/g, "-");
+  out = out.replace(/\u2192/g, ">");
+  out = out.replace(/\u2022/g, "*");
+  out = out.replace(/\u2026/g, "...");
+  out = out.replace(/[\u201C\u201D]/g, '"');
+  out = out.replace(/[\u2018\u2019]/g, "'");
+  try {
+    out = out.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  } catch {
+    /* ignore */
+  }
+  // Drop any remaining non-ASCII (Gujarati/Hindi etc. -> empty, not dots)
+  out = out.replace(/[^\x20-\x7E]/g, "");
+  return out.replace(/ +/g, " ").trim();
+}
+
+
+
 function formatOrderTime(orderedAt?: string | Date | null): string {
   const d = orderedAt ? new Date(orderedAt) : new Date();
-  if (isNaN(d.getTime())) {
-    return new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
-  }
-  return d.toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+  const safe = isNaN(d.getTime()) ? new Date() : d;
+  // Asia/Kolkata via offset +5:30
+  const utc = safe.getTime() + safe.getTimezoneOffset() * 60000;
+  const ist = new Date(utc + 5.5 * 3600000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  let h = ist.getHours();
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  if (h === 0) h = 12;
+  return (
+    pad(ist.getDate()) +
+    " " +
+    months[ist.getMonth()] +
+    " " +
+    ist.getFullYear() +
+    " " +
+    pad(h) +
+    ":" +
+    pad(ist.getMinutes()) +
+    " " +
+    ampm
+  );
 }
 
 function normalizeInstagram(raw: string): string {
@@ -164,21 +199,21 @@ function buildSlipHtml(
   qrs: QrCell[],
   isCustomerCopy: boolean
 ): string {
-  const lang = getLang();
+  // Always English/ASCII on paper — thermal printers print non-English as dots
   const L = {
-    order: lang === "gu" ? "ઓર્ડર #" : lang === "hi" ? "ऑर्डर #" : lang === "mr" ? "ऑर्डर #" : lang === "ta" ? "ஆர்டர் #" : "Order #",
-    name: lang === "gu" ? "નામ" : lang === "hi" ? "नाम" : lang === "mr" ? "नाव" : lang === "ta" ? "பெயர்" : "Name",
-    mobile: lang === "gu" ? "મોબાઇલ" : lang === "hi" ? "मोबाइल" : "Mobile",
-    total: lang === "gu" ? "કુલ" : lang === "hi" ? "कुल" : lang === "mr" ? "एकूण" : lang === "ta" ? "மொத்தம்" : "TOTAL",
-    thanks: lang === "gu" ? "આભાર" : lang === "hi" ? "धन्यवाद" : lang === "mr" ? "धन्यवाद" : lang === "ta" ? "நன்றி" : "Thank you",
-    parcel: lang === "gu" ? "પાર્સલ" : lang === "hi" ? "पार्सल" : "PARCEL",
-    jain: lang === "gu" ? "જૈન" : lang === "hi" ? "जैन" : "JAIN",
+    order: "Order #",
+    name: "Name",
+    mobile: "Mobile",
+    total: "TOTAL",
+    thanks: "Thank you",
+    parcel: "PARCEL",
+    jain: "JAIN",
   };
   const flags = [opts.parcel ? L.parcel : "", opts.jain ? L.jain : ""]
     .filter(Boolean)
-    .join(" · ");
-  const name = (opts.customerName || "").trim();
-  const mobile = (opts.customerMobile || "").trim();
+    .join(" / ");
+  const name = thermalSafe(opts.customerName || "");
+  const mobile = thermalSafe(opts.customerMobile || "");
   const customerBlock =
     name || mobile
       ? `<div class="sep"></div>
@@ -190,12 +225,12 @@ function buildSlipHtml(
     .map((i) => {
       const note = (i.note || "").trim();
       const noteHtml = note
-        ? `<tr><td colspan="2" class="note">→ ${escapeHtml(note)}</td></tr>`
+        ? `<tr><td colspan="2" class="note">> ${escapeHtml(thermalSafe(note))}</td></tr>`
         : "";
       const lineAmt = Math.round(Number(i.price) * Number(i.qty));
       return `<tr>
-        <td class="iname">${i.qty}x ${escapeHtml(i.name)}</td>
-        <td class="iamt">Rs ${lineAmt}</td>
+        <td class="iname">${i.qty}X ${escapeHtml(thermalSafe(i.name))}</td>
+        <td class="iamt">${lineAmt}/-</td>
       </tr>${noteHtml}`;
     })
     .join("");
@@ -210,7 +245,7 @@ function buildSlipHtml(
              .map(
                (q) => `
              <div class="qrcell">
-               <div class="qrlab">${escapeHtml(q.label)}</div>
+               <div class="qrlab">${escapeHtml(thermalSafe(q.label))}</div>
                <img class="qr" src="${q.dataUrl}" alt="" />
              </div>`
              )
@@ -220,17 +255,17 @@ function buildSlipHtml(
 
   return `
     <div class="sheet">
-      <div class="copy">${escapeHtml(copyLabel)}</div>
-      <div class="head">${escapeHtml(cfg.shopHeader)}</div>
+      <div class="copy">${escapeHtml(thermalSafe(copyLabel))}</div>
+      <div class="head">${escapeHtml(thermalSafe(cfg.shopHeader || "Shop"))}</div>
       <div class="sep"></div>
-      <div><b>${L.order}${opts.orderNo || "—"}</b></div>
+      <div><b>${L.order}${opts.orderNo || "-"}</b></div>
       <div>${formatOrderTime(opts.orderedAt)}</div>
       ${flags ? `<div><b>${flags}</b></div>` : ""}
       ${customerBlock}
       <div class="sep"></div>
       ${itemsTable}
       <div class="sep"></div>
-      <div class="total"><b>${L.total}  Rs ${Math.round(Number(opts.total) || 0)}</b></div>
+      <div class="total"><b>TOTAL RS ${Math.round(Number(opts.total) || 0)}/-</b></div>
       ${opts.gstHtml || ""}
       ${qrBlock}
       <div class="sep"></div>
@@ -254,23 +289,20 @@ function buildKotHtml(
   cfg: PrinterCfg,
   copyLabel: string
 ): string {
-  const lang = getLang();
-  const orderLabel =
-    lang === "gu" ? "ઓર્ડર #" : lang === "hi" ? "ऑर्डर #" : lang === "mr" ? "ऑर्डर #" : lang === "ta" ? "ஆர்டர் #" : "Order #";
-  const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""].filter(Boolean).join(" · ");
-  const name = (opts.customerName || "").trim();
-  const totalLabel =
-    lang === "gu" ? "કુલ" : lang === "hi" ? "कुल" : lang === "mr" ? "एकूण" : lang === "ta" ? "மொத்தம்" : "TOTAL";
+  const orderLabel = "Order #";
+  const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""].filter(Boolean).join(" / ");
+  const name = thermalSafe(opts.customerName || "");
+  const totalLabel = "TOTAL";
   const itemRows = opts.items
     .map((i) => {
       const note = (i.note || "").trim();
       const noteHtml = note
-        ? `<tr><td colspan="2" class="note">→ ${escapeHtml(note)}</td></tr>`
+        ? `<tr><td colspan="2" class="note">> ${escapeHtml(thermalSafe(note))}</td></tr>`
         : "";
       const lineAmt = Math.round(Number(i.price) * Number(i.qty));
       return `<tr>
-        <td class="iname"><b>${i.qty}x</b> ${escapeHtml(i.name)}</td>
-        <td class="iamt">Rs ${lineAmt}</td>
+        <td class="iname">${i.qty}X ${escapeHtml(thermalSafe(i.name))}</td>
+        <td class="iamt">${lineAmt}/-</td>
       </tr>${noteHtml}`;
     })
     .join("");
@@ -278,17 +310,17 @@ function buildKotHtml(
   const totalAmt = Math.round(Number(opts.total) || 0);
   return `
     <div class="sheet">
-      <div class="copy">${escapeHtml(copyLabel)}</div>
-      <div class="head">${escapeHtml(cfg.shopHeader)}</div>
+      <div class="copy">${escapeHtml(thermalSafe(copyLabel))}</div>
+      <div class="head">${escapeHtml(thermalSafe(cfg.shopHeader || "Shop"))}</div>
       <div class="sep"></div>
-      <div><b>${orderLabel}${opts.orderNo || "—"}</b></div>
+      <div><b>${orderLabel}${opts.orderNo || "-"}</b></div>
       <div>${formatOrderTime(opts.orderedAt)}</div>
       ${flags ? `<div><b>${flags}</b></div>` : ""}
       ${name ? `<div>${escapeHtml(name)}</div>` : ""}
       <div class="sep"></div>
       ${itemsTable}
       <div class="sep"></div>
-      <div class="total"><b>${totalLabel}  Rs ${totalAmt}</b></div>
+      <div class="total"><b>TOTAL RS ${totalAmt}/-</b></div>
       <div style="text-align:center;font-size:11px">${opts.items.reduce((s, i) => s + i.qty, 0)} items</div>
     </div>`;
 }
@@ -310,7 +342,7 @@ function buildEscPosBytes(
   title: string
 ): Uint8Array {
   const lines: string[] = [];
-  const push = (s: string) => lines.push(s.slice(0, 32));
+  const push = (s: string) => lines.push(thermalSafe(s).slice(0, 32));
   push(cfg.shopHeader || "Shop");
   push(title);
   push("------------------------");
@@ -322,13 +354,12 @@ function buildEscPosBytes(
   if (opts.customerMobile) push(String(opts.customerMobile));
   push("------------------------");
   for (const it of opts.items) {
-    push(`${it.qty}x ${it.name}`);
-    if (title.toLowerCase().includes("invoice") || title.toLowerCase().includes("customer") || title === "TAX INVOICE") {
-      push(`  Rs ${Math.round(it.price * it.qty)}`);
-    }
+    push(`${it.qty}X ${it.name}`);
+    push(`  ${Math.round(Number(it.price) * Number(it.qty))}/-`);
+    if (it.note) push(`  > ${it.note}`);
   }
   push("------------------------");
-  push(`TOTAL  Rs ${Math.round(opts.total)}`);
+  push(`TOTAL RS ${Math.round(Number(opts.total) || 0)}/-`);
   push("Thank you");
   push("");
   push("");
@@ -687,7 +718,7 @@ export async function printOrderReceipt(opts: {
         }
       }
       #pos-print-root .sheet {
-        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-family: 'Courier New', Courier, monospace;
         font-size: 12px;
         line-height: 1.3;
         color: #000;
