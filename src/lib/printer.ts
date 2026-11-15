@@ -253,16 +253,24 @@ function buildKotHtml(
   cfg: PrinterCfg,
   copyLabel: string
 ): string {
+  const lang = getLang();
+  const orderLabel =
+    lang === "gu" ? "ઓર્ડર #" : lang === "hi" ? "ऑर्डर #" : lang === "mr" ? "ऑर्डर #" : lang === "ta" ? "ஆர்டர் #" : "Order #";
+  const flags = [opts.parcel ? "PARCEL" : "", opts.jain ? "JAIN" : ""].filter(Boolean).join(" · ");
   const name = (opts.customerName || "").trim();
   const items = opts.items
-    .map((i) => `<div class="row"><span><b>${i.qty}×</b> ${escapeHtml(i.name)}</span></div>`)
+    .map((i) => {
+      const note = (i.note || "").trim();
+      const noteHtml = note ? `<div class="note">→ ${escapeHtml(note)}</div>` : "";
+      return `<div class="row"><span class="iname"><b>${i.qty}×</b> ${escapeHtml(i.name)}</span></div>${noteHtml}`;
+    })
     .join("");
   return `
     <div class="sheet">
       <div class="copy">${escapeHtml(copyLabel)}</div>
       <div class="head">${escapeHtml(cfg.shopHeader)}</div>
       <div class="sep"></div>
-      <div><b>${L.order}${opts.orderNo || "—"}</b></div>
+      <div><b>${orderLabel}${opts.orderNo || "—"}</b></div>
       <div>${formatOrderTime(opts.orderedAt)}</div>
       ${flags ? `<div><b>${flags}</b></div>` : ""}
       ${name ? `<div>${escapeHtml(name)}</div>` : ""}
