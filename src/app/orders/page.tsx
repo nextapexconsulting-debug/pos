@@ -57,20 +57,34 @@ function Orders() {
   const [splitFor, setSplitFor] = useState<string | null>(null);
   const [splitCash, setSplitCash] = useState("");
   const [splitUpi, setSplitUpi] = useState("");
+  const [dayExpense, setDayExpense] = useState(0);
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("orders")
-      .select(
-        "id,order_no,created_at,total,status,payment_status,payment_method,cash_paid,upi_paid,is_parcel,is_jain,customer_name,customer_mobile,order_items(name_en,name_gu,qty,price,line_total,line_note)"
-      )
-      .eq("order_date", date)
-      .order("order_no", { ascending: false });
-    if (error) setErr(error.message);
+    const [ordRes, expRes] = await Promise.all([
+      supabase
+        .from("orders")
+        .select(
+          "id,order_no,created_at,total,status,payment_status,payment_method,cash_paid,upi_paid,is_parcel,is_jain,customer_name,customer_mobile,order_items(name_en,name_gu,qty,price,line_total,line_note)"
+        )
+        .eq("order_date", date)
+        .order("order_no", { ascending: false }),
+      supabase
+        .from("expenses")
+        .select("amount,spread_days,expense_date")
+        .eq("expense_date", date),
+    ]);
+    if (ordRes.error) setErr(ordRes.error.message);
     else {
       setErr("");
-      setOrders((data as unknown as Order[]) ?? []);
+      setOrders((ordRes.data as unknown as Order[]) ?? []);
     }
+    // Daily share: amount / spread_days (same idea as reports)
+    const expRows = (expRes.data as { amount: number; spread_days: number | null }[]) ?? [];
+    const expTotal = expRows.reduce((s, r) => {
+      const days = Math.max(1, Number(r.spread_days) || 1);
+      return s + Number(r.amount || 0) / days;
+    }, 0);
+    setDayExpense(Math.round(expTotal * 100) / 100);
   }, [date]);
 
   useEffect(() => {
@@ -161,11 +175,17 @@ function Orders() {
 
   return (
     <>
-      <div className={`${card} grid grid-cols-2 sm:grid-cols-4 gap-2 text-center`}>
+      <div className={`${card} grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center`}>
         <Stat label="Total sales" v={sum((o) => Number(o.total))} c="text-slate-800" />
         <Stat label="Cash" v={sum(cashSum)} c="pos-text" />
         <Stat label="UPI" v={sum(upiSum)} c="text-indigo-600" />
         <Stat label="Not paid yet" v={unpaidSum()} c="text-amber-600" />
+        <Stat label="Expense" v={dayExpense} c="text-red-600" />
+        <Stat
+          label="Net"
+          v={sum((o) => Number(o.total)) - dayExpense}
+          c={sum((o) => Number(o.total)) - dayExpense >= 0 ? "text-emerald-700" : "text-red-600"}
+        />
       </div>
 
       <div className="flex gap-2 items-center flex-wrap">
