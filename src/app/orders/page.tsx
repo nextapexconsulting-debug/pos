@@ -70,7 +70,7 @@ function Orders() {
         .order("order_no", { ascending: false }),
       supabase
         .from("expenses")
-        .select("amount,spread_days,expense_date")
+        .select("amount,spread_days,expense_date,category")
         .eq("expense_date", date),
     ]);
     if (ordRes.error) setErr(ordRes.error.message);
@@ -78,9 +78,28 @@ function Orders() {
       setErr("");
       setOrders((ordRes.data as unknown as Order[]) ?? []);
     }
-    // Daily share: amount / spread_days (same idea as reports)
-    const expRows = (expRes.data as { amount: number; spread_days: number | null }[]) ?? [];
+    // Exclude fixed overhead: rent, salary, electricity (any language label)
+    const SKIP = new Set([
+      "rent",
+      "salary",
+      "electricity",
+      "किराया",
+      "वेतन",
+      "बिजली",
+      "ભાડું",
+      "પગાર",
+      "લાઇટ",
+      "light bill",
+      "light",
+    ]);
+    const expRows =
+      (expRes.data as { amount: number; spread_days: number | null; category: string }[]) ?? [];
     const expTotal = expRows.reduce((s, r) => {
+      const cat = String(r.category || "")
+        .trim()
+        .toLowerCase();
+      if (SKIP.has(cat) || SKIP.has(String(r.category || "").trim())) return s;
+      if (cat.includes("rent") || cat.includes("salary") || cat.includes("electric")) return s;
       const days = Math.max(1, Number(r.spread_days) || 1);
       return s + Number(r.amount || 0) / days;
     }, 0);
@@ -182,9 +201,9 @@ function Orders() {
         <Stat label="Not paid yet" v={unpaidSum()} c="text-amber-600" />
         <Stat label="Expense" v={dayExpense} c="text-red-600" />
         <Stat
-          label="Net"
-          v={sum((o) => Number(o.total)) - dayExpense}
-          c={sum((o) => Number(o.total)) - dayExpense >= 0 ? "text-emerald-700" : "text-red-600"}
+          label="Net (Cash - Exp)"
+          v={sum(cashSum) - dayExpense}
+          c={sum(cashSum) - dayExpense >= 0 ? "text-emerald-700" : "text-red-600"}
         />
       </div>
 
